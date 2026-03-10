@@ -4,6 +4,7 @@ type OnChangeCallback = (update: SessionUpdate) => void
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
+  private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private onChange: OnChangeCallback | null = null
 
   setOnChange(callback: OnChangeCallback): void {
@@ -42,9 +43,15 @@ export class SessionManager {
       }, 3000)
     }
 
-    // Clean up ended sessions after a delay
+    // Clean up ended sessions after a delay (clear previous timer if any)
     if (hook_event_name === 'SessionEnd') {
-      setTimeout(() => this.sessions.delete(session_id), 5000)
+      const prev = this.cleanupTimers.get(session_id)
+      if (prev) clearTimeout(prev)
+      const timer = setTimeout(() => {
+        this.sessions.delete(session_id)
+        this.cleanupTimers.delete(session_id)
+      }, 5000)
+      this.cleanupTimers.set(session_id, timer)
     }
 
     return this.getUpdate()

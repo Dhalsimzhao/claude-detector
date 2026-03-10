@@ -18,7 +18,12 @@ function getHookScriptPath(): string {
 function readSettings(): Record<string, unknown> {
   const settingsPath = getSettingsPath()
   if (!fs.existsSync(settingsPath)) return {}
-  return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+  } catch {
+    console.warn('[claude-detector] Failed to parse settings.json, skipping hook installation')
+    return {}
+  }
 }
 
 function writeSettings(settings: Record<string, unknown>): void {
@@ -60,7 +65,14 @@ export function installHooks(): void {
   const destDir = path.join(home, '.claude-detector')
   if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
 
-  const srcScript = path.join(__dirname, '../../scripts/claude-detector-hook.js')
+  // In dev: __dirname is src/main/, in production: out/main/
+  // Try multiple paths to find the hook script
+  const candidates = [
+    path.join(__dirname, '../../scripts/claude-detector-hook.js'),
+    path.join(__dirname, '../../resources/claude-detector-hook.js'),
+    path.join(process.resourcesPath || '', 'claude-detector-hook.js')
+  ]
+  const srcScript = candidates.find(p => fs.existsSync(p)) || candidates[0]
   const destScript = path.join(destDir, 'hook.js')
   fs.copyFileSync(srcScript, destScript)
 }

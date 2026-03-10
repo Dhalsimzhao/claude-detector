@@ -36,7 +36,7 @@ app.on('before-quit', () => {
   hookServer.stop()
 })
 
-// Keep app running when window closed
-app.on('window-all-closed', (e: Event) => {
-  e.preventDefault()
+// Keep app running in tray when window closed
+app.on('window-all-closed', () => {
+  // Do nothing - app stays alive via tray
 })

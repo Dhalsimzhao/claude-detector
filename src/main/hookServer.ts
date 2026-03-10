@@ -13,7 +13,7 @@ export class HookServer {
 
   constructor(onEvent: EventCallback) {
     this.onEvent = onEvent
-    this.app.use(express.json())
+    this.app.use(express.json({ limit: '10kb' }))
 
     this.app.post('/event', (req, res) => {
       try {

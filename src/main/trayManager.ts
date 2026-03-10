@@ -1,4 +1,4 @@
-import { Tray, Menu, app, nativeImage } from 'electron'
+import { Tray, Menu, nativeImage } from 'electron'
 import { join } from 'path'
 
 export function createTray(onQuit: () => void): Tray {
