@@ -1,9 +1,9 @@
-import { PetCanvas } from './components/PetCanvas'
+import { PetSprite } from './components/PetSprite'
 import { SessionBadge } from './components/SessionBadge'
 import { useAnimationState } from './hooks/useAnimationState'
 
 function App() {
-  const { state, frameIndex, sessions } = useAnimationState()
+  const { state, sessions } = useAnimationState()
 
   return (
     <div style={{
@@ -17,7 +17,7 @@ function App() {
       cursor: 'grab',
       userSelect: 'none'
     } as React.CSSProperties}>
-      <PetCanvas state={state} frameIndex={frameIndex} />
+      <PetSprite state={state} />
       <SessionBadge sessions={sessions} />
     </div>
   )
