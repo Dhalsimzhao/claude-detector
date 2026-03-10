@@ -10,6 +10,11 @@ let petWindow: BrowserWindow | null = null
 
 const sessionManager = new SessionManager()
 
+// Handle timer-based state changes (e.g. needsAttention)
+sessionManager.setOnChange((update) => {
+  petWindow?.webContents.send('session-update', update)
+})
+
 const hookServer = new HookServer((event: HookEventPayload) => {
   const update = sessionManager.handleEvent(event)
   petWindow?.webContents.send('session-update', update)
