@@ -1,51 +1,37 @@
-import { app, shell, BrowserWindow } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { app, BrowserWindow } from 'electron'
+import { createPetWindow } from './windowManager'
+import { createTray } from './trayManager'
+import { HookServer } from './hookServer'
+import { SessionManager } from './sessionManager'
+import { installHooks } from './hookInstaller'
+import { HookEventPayload } from '../shared/types'
 
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
+let petWindow: BrowserWindow | null = null
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
+const sessionManager = new SessionManager()
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+const hookServer = new HookServer((event: HookEventPayload) => {
+  const update = sessionManager.handleEvent(event)
+  petWindow?.webContents.send('session-update', update)
+})
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-}
+app.whenReady().then(async () => {
+  installHooks()
+  await hookServer.start()
 
-app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.electron')
+  petWindow = createPetWindow()
 
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  createWindow()
-
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  createTray(() => {
+    hookServer.stop()
+    app.quit()
   })
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+app.on('before-quit', () => {
+  hookServer.stop()
+})
+
+// Keep app running when window closed
+app.on('window-all-closed', (e: Event) => {
+  e.preventDefault()
 })
