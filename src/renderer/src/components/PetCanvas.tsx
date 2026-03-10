@@ -8,11 +8,9 @@ interface PetCanvasProps {
 
 const STATE_COLORS: Record<PetState, string> = {
   idle: '#4a9eff',
-  thinking: '#ffa500',
-  coding: '#00cc66',
-  needsAttention: '#ff6b6b',
-  complete: '#9b59b6',
-  error: '#ff0000'
+  running: '#00cc66',
+  permissionRequest: '#ffa500',
+  taskCompleted: '#9b59b6'
 }
 
 const SIZE = 128

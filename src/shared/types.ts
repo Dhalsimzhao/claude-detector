@@ -1,5 +1,5 @@
 // Pet animation states
-export type PetState = 'idle' | 'thinking' | 'coding' | 'needsAttention' | 'complete' | 'error'
+export type PetState = 'idle' | 'running' | 'permissionRequest' | 'taskCompleted'
 
 // Hook event names from Claude Code
 export type HookEventName =

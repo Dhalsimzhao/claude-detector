@@ -5,6 +5,8 @@ type OnChangeCallback = (update: SessionUpdate) => void
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private permissionTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private taskCompletedTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private onChange: OnChangeCallback | null = null
 
   setOnChange(callback: OnChangeCallback): void {
@@ -29,50 +31,81 @@ export class SessionManager {
 
     session.lastEvent = hook_event_name
     session.updatedAt = Date.now()
-    session.petState = this.mapEventToState(hook_event_name, event)
     if (tool_name) session.lastToolName = tool_name
 
-    // After Stop, transition to needsAttention if no follow-up within 3s
-    if (hook_event_name === 'Stop' && session.petState === 'complete') {
-      setTimeout(() => {
-        const s = this.sessions.get(session_id)
-        if (s && s.petState === 'complete') {
-          s.petState = 'needsAttention'
-          this.onChange?.(this.getUpdate())
-        }
-      }, 3000)
+    // Clear permission timer on any non-PreToolUse event
+    if (hook_event_name !== 'PreToolUse') {
+      this.clearTimer(this.permissionTimers, session_id)
     }
 
-    // Clean up ended sessions after a delay (clear previous timer if any)
-    if (hook_event_name === 'SessionEnd') {
-      const prev = this.cleanupTimers.get(session_id)
-      if (prev) clearTimeout(prev)
-      const timer = setTimeout(() => {
-        this.sessions.delete(session_id)
-        this.cleanupTimers.delete(session_id)
-      }, 5000)
-      this.cleanupTimers.set(session_id, timer)
+    // Clear taskCompleted timer on new activity
+    if (hook_event_name === 'UserPromptSubmit') {
+      this.clearTimer(this.taskCompletedTimers, session_id)
+    }
+
+    switch (hook_event_name) {
+      case 'SessionStart':
+        session.petState = 'idle'
+        break
+
+      case 'UserPromptSubmit':
+        session.petState = 'running'
+        break
+
+      case 'PreToolUse':
+        session.petState = 'running'
+        // If no PostToolUse within 2s, assume permission request
+        this.clearTimer(this.permissionTimers, session_id)
+        this.permissionTimers.set(session_id, setTimeout(() => {
+          const s = this.sessions.get(session_id)
+          if (s && s.petState === 'running') {
+            s.petState = 'permissionRequest'
+            this.onChange?.(this.getUpdate())
+          }
+          this.permissionTimers.delete(session_id)
+        }, 2000))
+        break
+
+      case 'PostToolUse':
+        session.petState = 'running'
+        this.clearTimer(this.permissionTimers, session_id)
+        break
+
+      case 'Stop':
+        // Briefly show taskCompleted, then transition to idle
+        session.petState = 'taskCompleted'
+        this.clearTimer(this.taskCompletedTimers, session_id)
+        this.taskCompletedTimers.set(session_id, setTimeout(() => {
+          const s = this.sessions.get(session_id)
+          if (s && s.petState === 'taskCompleted') {
+            s.petState = 'idle'
+            this.onChange?.(this.getUpdate())
+          }
+          this.taskCompletedTimers.delete(session_id)
+        }, 3000))
+        break
+
+      case 'SessionEnd':
+        session.petState = 'idle'
+        this.clearTimer(this.permissionTimers, session_id)
+        this.clearTimer(this.taskCompletedTimers, session_id)
+        // Remove session after delay
+        this.clearTimer(this.cleanupTimers, session_id)
+        this.cleanupTimers.set(session_id, setTimeout(() => {
+          this.sessions.delete(session_id)
+          this.cleanupTimers.delete(session_id)
+        }, 5000))
+        break
     }
 
     return this.getUpdate()
   }
 
-  private mapEventToState(event: string, payload: HookEventPayload): PetState {
-    switch (event) {
-      case 'SessionStart':
-        return 'idle'
-      case 'UserPromptSubmit':
-        return 'thinking'
-      case 'PreToolUse':
-      case 'PostToolUse':
-        return 'coding'
-      case 'Stop':
-        if (payload.reason === 'error') return 'error'
-        return 'complete'
-      case 'SessionEnd':
-        return 'idle'
-      default:
-        return 'idle'
+  private clearTimer(timers: Map<string, ReturnType<typeof setTimeout>>, id: string): void {
+    const timer = timers.get(id)
+    if (timer) {
+      clearTimeout(timer)
+      timers.delete(id)
     }
   }
 
@@ -81,7 +114,7 @@ export class SessionManager {
 
     // Resolve active pet state: priority order
     let activePetState: PetState = 'idle'
-    const priority: PetState[] = ['error', 'needsAttention', 'coding', 'thinking', 'complete', 'idle']
+    const priority: PetState[] = ['permissionRequest', 'running', 'taskCompleted', 'idle']
 
     for (const p of priority) {
       if (sessions.some(s => s.petState === p)) {

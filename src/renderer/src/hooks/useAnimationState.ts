@@ -9,11 +9,9 @@ interface AnimationFrame {
 
 const FRAME_COUNTS: Record<PetState, number> = {
   idle: 8,
-  thinking: 6,
-  coding: 8,
-  needsAttention: 4,
-  complete: 6,
-  error: 4
+  running: 8,
+  permissionRequest: 4,
+  taskCompleted: 6
 }
 
 const FPS = 8
