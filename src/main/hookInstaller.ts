@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 const HOOK_IDENTIFIER = 'claude-detector-hook'
-const HOOK_EVENTS = ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop']
+const HOOK_EVENTS = ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'Notification', 'Stop']
 
 function getSettingsPath(): string {
   const home = process.env.HOME || process.env.USERPROFILE || ''

@@ -5,7 +5,6 @@ type OnChangeCallback = (update: SessionUpdate) => void
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  private permissionTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private taskCompletedTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private onChange: OnChangeCallback | null = null
 
@@ -33,11 +32,6 @@ export class SessionManager {
     session.updatedAt = Date.now()
     if (tool_name) session.lastToolName = tool_name
 
-    // Clear permission timer on any non-PreToolUse event
-    if (hook_event_name !== 'PreToolUse') {
-      this.clearTimer(this.permissionTimers, session_id)
-    }
-
     // Clear taskCompleted timer on new activity
     if (hook_event_name === 'UserPromptSubmit') {
       this.clearTimer(this.taskCompletedTimers, session_id)
@@ -53,22 +47,13 @@ export class SessionManager {
         break
 
       case 'PreToolUse':
+      case 'PostToolUse':
+      case 'PostToolUseFailure':
         session.petState = 'running'
-        // If no PostToolUse within 2s, assume permission request
-        this.clearTimer(this.permissionTimers, session_id)
-        this.permissionTimers.set(session_id, setTimeout(() => {
-          const s = this.sessions.get(session_id)
-          if (s && s.petState === 'running') {
-            s.petState = 'permissionRequest'
-            this.onChange?.(this.getUpdate())
-          }
-          this.permissionTimers.delete(session_id)
-        }, 2000))
         break
 
-      case 'PostToolUse':
-        session.petState = 'running'
-        this.clearTimer(this.permissionTimers, session_id)
+      case 'PermissionRequest':
+        session.petState = 'permissionRequest'
         break
 
       case 'Stop':
@@ -85,9 +70,12 @@ export class SessionManager {
         }, 3000))
         break
 
+      case 'Notification':
+        // Don't change pet state for notifications, just track the event
+        break
+
       case 'SessionEnd':
         session.petState = 'idle'
-        this.clearTimer(this.permissionTimers, session_id)
         this.clearTimer(this.taskCompletedTimers, session_id)
         // Remove session after delay
         this.clearTimer(this.cleanupTimers, session_id)

@@ -8,6 +8,9 @@ export type HookEventName =
   | 'UserPromptSubmit'
   | 'PreToolUse'
   | 'PostToolUse'
+  | 'PostToolUseFailure'
+  | 'PermissionRequest'
+  | 'Notification'
   | 'Stop'
 
 // Data received from hook script via stdin (subset we care about)
@@ -20,6 +23,8 @@ export interface HookEventPayload {
   prompt?: string
   source?: string
   reason?: string
+  notification_type?: string
+  message?: string
 }
 
 // Internal session state
