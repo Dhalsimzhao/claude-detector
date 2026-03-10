@@ -1,13 +1,11 @@
-import { contextBridge } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer } from 'electron'
+import { SessionUpdate } from '../shared/types'
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-  } catch (error) {
-    console.error(error)
+contextBridge.exposeInMainWorld('api', {
+  onSessionUpdate: (callback: (update: SessionUpdate) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, update: SessionUpdate): void =>
+      callback(update)
+    ipcRenderer.on('session-update', handler)
+    return () => ipcRenderer.removeListener('session-update', handler)
   }
-} else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
-}
+})
