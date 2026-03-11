@@ -18,12 +18,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: |
-          npm install -g npm@10.2.4
-          npm ci
-        env:
-          npm_config_maxsockets: 1
+      - run: npm ci
 
       - name: Build and package
         run: npm run dist
