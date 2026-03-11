@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -108,10 +108,14 @@ app.whenReady().then(async () => {
     }
   )
 
-  // Intercept Windows system context menu on drag region right-click
-  petWindow.on('system-context-menu', (event, point) => {
-    event.preventDefault()
-    buildContextMenu().popup({ window: petWindow ?? undefined, x: point.x, y: point.y })
+  ipcMain.on('move-window', (_, dx: number, dy: number) => {
+    if (!petWindow) return
+    const [x, y] = petWindow.getPosition()
+    petWindow.setPosition(x + dx, y + dy)
+  })
+
+  petWindow.webContents.on('context-menu', () => {
+    buildContextMenu().popup({ window: petWindow ?? undefined })
   })
 })
 

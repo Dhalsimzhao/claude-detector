@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PetCanvas } from './components/PetCanvas'
 import { PetSprite } from './components/PetSprite'
 import { SessionBadge } from './components/SessionBadge'
@@ -10,6 +10,7 @@ function App() {
   const { state, frameIndex, sessions } = useAnimationState()
   const [theme, setTheme] = useState<PetTheme>('pokemon')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
+  const dragRef = useRef<{ startX: number; startY: number } | null>(null)
 
   useEffect(() => {
     return window.api.onThemeChange(setTheme)
@@ -21,8 +22,31 @@ function App() {
     })
   }, [])
 
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragRef.current && e.buttons === 1) {
+        const dx = e.screenX - dragRef.current.startX
+        const dy = e.screenY - dragRef.current.startY
+        dragRef.current = { startX: e.screenX, startY: e.screenY }
+        window.api.moveWindow(dx, dy)
+      }
+    }
+    const handleMouseUp = () => {
+      dragRef.current = null
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
   return (
     <div
+      onMouseDown={(e) => {
+        if (e.button === 0) dragRef.current = { startX: e.screenX, startY: e.screenY }
+      }}
       style={{
         width: '100vw',
         height: '100vh',
@@ -30,9 +54,11 @@ function App() {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        WebkitAppRegion: 'drag',
         cursor: 'grab',
-        userSelect: 'none'
+        userSelect: 'none',
+        // Nearly invisible background so Windows registers mouse events
+        // on transparent window pixels instead of passing them through
+        background: 'rgba(0,0,0,0.01)'
       } as React.CSSProperties}
     >
       {theme === 'blocks'
