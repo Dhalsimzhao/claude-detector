@@ -18,7 +18,7 @@ export function createPetWindow(): BrowserWindow {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
-    focusable: true,
+    focusable: false,
     hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

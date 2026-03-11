@@ -14,9 +14,6 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('theme-change', handler)
     return () => ipcRenderer.removeListener('theme-change', handler)
   },
-  moveWindow: (dx: number, dy: number) => {
-    ipcRenderer.send('move-window', dx, dy)
-  },
   onShowSessions: (callback: (sessions: SessionState[]) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, sessions: SessionState[]): void =>
       callback(sessions)

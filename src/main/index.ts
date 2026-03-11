@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -40,6 +40,51 @@ const hookServer = new HookServer((event: HookEventPayload) => {
   petWindow?.webContents.send('session-update', update)
 })
 
+function buildContextMenu(): Menu {
+  return Menu.buildFromTemplate([
+    {
+      label: 'Theme',
+      submenu: [
+        {
+          label: 'Blocks',
+          type: 'radio',
+          checked: currentTheme === 'blocks',
+          click: () => {
+            currentTheme = 'blocks'
+            writeConfig({ theme: 'blocks' })
+            petWindow?.webContents.send('theme-change', 'blocks')
+          }
+        },
+        {
+          label: 'Pokemon',
+          type: 'radio',
+          checked: currentTheme === 'pokemon',
+          click: () => {
+            currentTheme = 'pokemon'
+            writeConfig({ theme: 'pokemon' })
+            petWindow?.webContents.send('theme-change', 'pokemon')
+          }
+        }
+      ]
+    },
+    {
+      label: 'Show Sessions',
+      click: () => {
+        const sessions = sessionManager.getUpdate().sessions
+        petWindow?.webContents.send('show-sessions', sessions)
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        hookServer.stop()
+        app.quit()
+      }
+    }
+  ])
+}
+
 app.whenReady().then(async () => {
   installHooks()
   await hookServer.start()
@@ -63,56 +108,10 @@ app.whenReady().then(async () => {
     }
   )
 
-  ipcMain.on('move-window', (_, dx: number, dy: number) => {
-    if (!petWindow) return
-    const [x, y] = petWindow.getPosition()
-    petWindow.setPosition(x + dx, y + dy)
-  })
-
-  petWindow.webContents.on('context-menu', () => {
-    const menu = Menu.buildFromTemplate([
-      {
-        label: 'Theme',
-        submenu: [
-          {
-            label: 'Blocks',
-            type: 'radio',
-            checked: currentTheme === 'blocks',
-            click: () => {
-              currentTheme = 'blocks'
-              writeConfig({ theme: 'blocks' })
-              petWindow?.webContents.send('theme-change', 'blocks')
-            }
-          },
-          {
-            label: 'Pokemon',
-            type: 'radio',
-            checked: currentTheme === 'pokemon',
-            click: () => {
-              currentTheme = 'pokemon'
-              writeConfig({ theme: 'pokemon' })
-              petWindow?.webContents.send('theme-change', 'pokemon')
-            }
-          }
-        ]
-      },
-      {
-        label: 'Show Sessions',
-        click: () => {
-          const sessions = sessionManager.getUpdate().sessions
-          petWindow?.webContents.send('show-sessions', sessions)
-        }
-      },
-      { type: 'separator' },
-      {
-        label: 'Quit',
-        click: () => {
-          hookServer.stop()
-          app.quit()
-        }
-      }
-    ])
-    menu.popup({ window: petWindow ?? undefined })
+  // Intercept Windows system context menu on drag region right-click
+  petWindow.on('system-context-menu', (event, point) => {
+    event.preventDefault()
+    buildContextMenu().popup({ window: petWindow ?? undefined, x: point.x, y: point.y })
   })
 })
 
