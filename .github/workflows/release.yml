@@ -20,8 +20,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm cache clean --force
-          npm install --no-audit --no-fund
+          npm install -g npm@10.2.4
+          npm ci
+        env:
+          npm_config_maxsockets: 1
 
       - name: Build and package
         run: npm run dist
