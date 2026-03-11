@@ -30,5 +30,6 @@
     "react-dom": "^18.3.1",
     "typescript": "^5.7.3",
     "vite": "^5.4.0"
-  }
+  },
+  "packageManager": "npm@9.5.0+sha512.1aa5444c3bb9c57e3e76bae3759996cb19770552d3a036a60745b3d7e93498b72b6984556fcd203984a748465b1efba5c3847253f1eae808947d40719a6ff683"
 }

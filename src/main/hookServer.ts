@@ -19,6 +19,7 @@ export class HookServer {
       try {
         const payload = req.body as HookEventPayload
         if (payload && payload.session_id && payload.hook_event_name) {
+          console.log(`[hook] ${payload.hook_event_name} | session=${payload.session_id.slice(0, 8)} | tool=${payload.tool_name || '-'}`)
           this.onEvent(payload)
         }
         res.status(200).json({ ok: true })

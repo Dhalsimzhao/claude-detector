@@ -1,12 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx asar:*)",
-      "Bash(xargs grep:*)",
-      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm view:*)",
+      "Bash(mv node_modules:*)",
+      "Bash(npm ls:*)",
+      "Bash(tasklist:*)",
+      "Bash(echo:*)",
+      "Bash(ELECTRON_MIRROR=\"https://npmmirror.com/mirrors/electron/\" npm install:*)",
+      "Bash(npx electron-vite:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(npm run:*)",
       "WebSearch",
-      "WebFetch(domain:electron-vite.org)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:bluemoonfalls.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Skill(commit)"
     ]
   }
 }

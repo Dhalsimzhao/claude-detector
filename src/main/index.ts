@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, Menu, screen } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -108,14 +108,11 @@ app.whenReady().then(async () => {
     }
   )
 
-  ipcMain.on('move-window', (_, dx: number, dy: number) => {
-    if (!petWindow) return
-    const [x, y] = petWindow.getPosition()
-    petWindow.setPosition(x + dx, y + dy)
-  })
-
-  petWindow.webContents.on('context-menu', () => {
-    buildContextMenu().popup({ window: petWindow ?? undefined })
+  petWindow.on('system-context-menu', (event) => {
+    event.preventDefault()
+    const [wx, wy] = petWindow!.getPosition()
+    const cursor = screen.getCursorScreenPoint()
+    buildContextMenu().popup({ window: petWindow ?? undefined, x: cursor.x - wx, y: cursor.y - wy })
   })
 })
 

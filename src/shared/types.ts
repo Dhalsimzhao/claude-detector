@@ -1,6 +1,9 @@
 // Pet animation states
 export type PetState = 'idle' | 'running' | 'permissionRequest' | 'taskCompleted'
 
+// Pet display themes
+export type PetTheme = 'blocks' | 'pokemon'
+
 // Hook event names from Claude Code
 export type HookEventName =
   | 'SessionStart'
