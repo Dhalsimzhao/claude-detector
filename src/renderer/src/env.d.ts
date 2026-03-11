@@ -5,12 +5,15 @@ declare module '*.gif' {
   export default src
 }
 
-import { SessionUpdate } from '../../shared/types'
+import { PetTheme, SessionState, SessionUpdate } from '../../shared/types'
 
 declare global {
   interface Window {
     api: {
       onSessionUpdate: (callback: (update: SessionUpdate) => void) => () => void
+      onThemeChange: (callback: (theme: PetTheme) => void) => () => void
+      showContextMenu: () => void
+      onShowSessions: (callback: (sessions: SessionState[]) => void) => () => void
     }
   }
 }
