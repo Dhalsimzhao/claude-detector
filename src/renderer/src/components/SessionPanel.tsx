@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { SessionState, PetState } from '../../../shared/types'
 
 interface SessionPanelProps {
@@ -8,9 +8,9 @@ interface SessionPanelProps {
 
 const STATE_DOT: Record<PetState, string> = {
   idle: '#999',
-  running: '#4caf50',
-  permissionRequest: '#ff9800',
-  taskCompleted: '#9c7cfa'
+  running: '#34a853',
+  permissionRequest: '#ea8600',
+  taskCompleted: '#7c4dff'
 }
 
 const STATE_LABEL: Record<PetState, string> = {
@@ -30,11 +30,13 @@ function timeSince(ts: number): string {
 
 export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
   const [, setTick] = useState(0)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
-    const timer = setTimeout(onClose, 10000)
+    const timer = setTimeout(() => onCloseRef.current(), 10000)
     return () => clearTimeout(timer)
-  }, [onClose])
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 1000)
@@ -48,10 +50,10 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
       left: 6,
       right: 6,
       bottom: 6,
-      background: '#2d2d2d',
+      background: '#f5f5f5',
       borderRadius: 6,
-      border: '1px solid #4a4a4a',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+      border: '1px solid #ccc',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -59,15 +61,35 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
     } as React.CSSProperties}>
       {/* Header */}
       <div style={{
-        padding: '8px 12px',
-        borderBottom: '1px solid #3a3a3a',
-        fontSize: 12,
-        fontFamily: '-apple-system, "Segoe UI", sans-serif',
-        color: '#ccc',
-        fontWeight: 600,
+        padding: '7px 10px',
+        borderBottom: '1px solid #ddd',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: '#fff',
         flexShrink: 0
       }}>
-        Sessions ({sessions.length})
+        <span style={{
+          fontSize: 12,
+          fontFamily: '-apple-system, "Segoe UI", sans-serif',
+          color: '#333',
+          fontWeight: 600
+        }}>
+          Sessions ({sessions.length})
+        </span>
+        <span
+          onClick={onClose}
+          style={{
+            fontSize: 14,
+            color: '#999',
+            cursor: 'pointer',
+            lineHeight: 1,
+            padding: '0 2px',
+            fontFamily: '-apple-system, "Segoe UI", sans-serif'
+          }}
+        >
+          ✕
+        </span>
       </div>
 
       {/* Session list */}
@@ -78,77 +100,78 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
       }}>
         {sessions.length === 0 ? (
           <div style={{
-            padding: '16px 12px',
+            padding: '16px 10px',
             fontSize: 12,
             fontFamily: '-apple-system, "Segoe UI", sans-serif',
-            color: '#666',
+            color: '#999',
             textAlign: 'center'
           }}>
             No active sessions
           </div>
         ) : (
-          sessions.map((s) => (
-            <div
-              key={s.sessionId}
-              style={{
-                padding: '6px 12px',
-                fontSize: 12,
-                fontFamily: '-apple-system, "Segoe UI", sans-serif'
-              }}
-            >
-              {/* Session ID + State */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 2
-              }}>
-                <span style={{
-                  color: '#ddd',
-                  fontFamily: 'monospace',
-                  fontSize: 12
-                }}>
-                  {s.sessionId.slice(0, 8)}
-                </span>
-                <span style={{
+          sessions.map((s, i) => (
+            <div key={s.sessionId}>
+              <div style={{ padding: '6px 10px' }}>
+                {/* Session ID + State */}
+                <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
-                  fontSize: 11,
-                  color: STATE_DOT[s.petState]
+                  justifyContent: 'space-between',
+                  marginBottom: 2
                 }}>
                   <span style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: STATE_DOT[s.petState],
-                    display: 'inline-block',
-                    flexShrink: 0
-                  }} />
-                  {STATE_LABEL[s.petState]}
-                </span>
+                    color: '#222',
+                    fontFamily: 'monospace',
+                    fontSize: 12
+                  }}>
+                    {s.sessionId.slice(0, 8)}
+                  </span>
+                  <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 11,
+                    fontFamily: '-apple-system, "Segoe UI", sans-serif',
+                    color: STATE_DOT[s.petState]
+                  }}>
+                    <span style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: STATE_DOT[s.petState],
+                      display: 'inline-block',
+                      flexShrink: 0
+                    }} />
+                    {STATE_LABEL[s.petState]}
+                  </span>
+                </div>
+                {/* Path */}
+                <div style={{
+                  color: '#666',
+                  fontSize: 11,
+                  fontFamily: '-apple-system, "Segoe UI", sans-serif',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {s.cwd.split(/[\\/]/).slice(-2).join('/')}
+                </div>
+                {/* Tool + time */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  color: '#999',
+                  fontSize: 10,
+                  fontFamily: '-apple-system, "Segoe UI", sans-serif',
+                  marginTop: 2
+                }}>
+                  <span>{s.lastToolName || ''}</span>
+                  <span>{timeSince(s.updatedAt)}</span>
+                </div>
               </div>
-              {/* Path */}
-              <div style={{
-                color: '#777',
-                fontSize: 11,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {s.cwd.split(/[\\/]/).slice(-2).join('/')}
-              </div>
-              {/* Tool + time */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                color: '#555',
-                fontSize: 10,
-                marginTop: 2
-              }}>
-                <span>{s.lastToolName || ''}</span>
-                <span>{timeSince(s.updatedAt)}</span>
-              </div>
+              {i < sessions.length - 1 && (
+                <div style={{ height: 1, background: '#eee', margin: '0 10px' }} />
+              )}
             </div>
           ))
         )}
