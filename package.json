@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Desktop pet that monitors Claude Code sessions",
   "main": "./out/main/index.js",
-  "author": "",
+  "author": "Dhalsimzhao",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
@@ -11,7 +11,44 @@
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web"
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.dhalsimzhao.claude-detector",
+    "productName": "Claude Detector",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "scripts/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/sprites",
+        "to": "sprites"
+      }
+    ],
+    "win": {
+      "icon": "resources/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "forceCodeSigning": false
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -25,11 +62,11 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.3.1",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^3.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.7.3",
     "vite": "^5.4.0"
-  },
-  "packageManager": "npm@9.5.0+sha512.1aa5444c3bb9c57e3e76bae3759996cb19770552d3a036a60745b3d7e93498b72b6984556fcd203984a748465b1efba5c3847253f1eae808947d40719a6ff683"
+  }
 }
