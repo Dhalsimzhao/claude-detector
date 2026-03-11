@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -107,6 +107,12 @@ app.whenReady().then(async () => {
       }
     ])
     menu.popup({ window: petWindow ?? undefined })
+  })
+
+  ipcMain.on('move-window', (_, dx: number, dy: number) => {
+    if (!petWindow) return
+    const [x, y] = petWindow.getPosition()
+    petWindow.setPosition(x + dx, y + dy)
   })
 })
 

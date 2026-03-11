@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { PetCanvas } from './components/PetCanvas'
 import { PetSprite } from './components/PetSprite'
 import { SessionBadge } from './components/SessionBadge'
@@ -10,6 +10,7 @@ function App() {
   const { state, frameIndex, sessions } = useAnimationState()
   const [theme, setTheme] = useState<PetTheme>('pokemon')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
+  const dragRef = useRef<{ startX: number; startY: number } | null>(null)
 
   useEffect(() => {
     return window.api.onThemeChange(setTheme)
@@ -21,8 +22,30 @@ function App() {
     })
   }, [])
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) {
+      dragRef.current = { startX: e.screenX, startY: e.screenY }
+    }
+  }, [])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (dragRef.current && e.buttons === 1) {
+      const dx = e.screenX - dragRef.current.startX
+      const dy = e.screenY - dragRef.current.startY
+      dragRef.current = { startX: e.screenX, startY: e.screenY }
+      window.api.moveWindow(dx, dy)
+    }
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    dragRef.current = null
+  }, [])
+
   return (
     <div
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       style={{
         width: '100vw',
         height: '100vh',
@@ -30,7 +53,6 @@ function App() {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
-        WebkitAppRegion: 'drag',
         cursor: 'grab',
         userSelect: 'none'
       } as React.CSSProperties}
