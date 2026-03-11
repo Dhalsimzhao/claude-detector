@@ -19,7 +19,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci || npm ci
 
       - name: Build and package
         run: npm run dist
