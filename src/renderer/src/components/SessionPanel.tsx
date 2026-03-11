@@ -1,14 +1,28 @@
 import { useEffect } from 'react'
-import { SessionState } from '../../../shared/types'
+import { SessionState, PetState } from '../../../shared/types'
 
 interface SessionPanelProps {
   sessions: SessionState[]
   onClose: () => void
 }
 
+const STATE_LABELS: Record<PetState, string> = {
+  idle: '💤 Idle',
+  running: '⚡ Running',
+  permissionRequest: '🔔 Waiting',
+  taskCompleted: '✅ Done'
+}
+
+const STATE_COLORS: Record<PetState, string> = {
+  idle: '#6b7280',
+  running: '#22c55e',
+  permissionRequest: '#f59e0b',
+  taskCompleted: '#a78bfa'
+}
+
 export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 8000)
+    const timer = setTimeout(onClose, 12000)
     return () => clearTimeout(timer)
   }, [onClose])
 
@@ -31,48 +45,91 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'rgba(30, 30, 40, 0.95)',
-          borderRadius: 8,
-          padding: '10px 14px',
-          color: '#e0e0e0',
-          fontSize: 11,
-          fontFamily: 'monospace',
-          maxWidth: 200,
-          maxHeight: 180,
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96))',
+          borderRadius: 12,
+          padding: 16,
+          color: '#e2e8f0',
+          fontSize: 12,
+          fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
+          minWidth: 220,
+          maxWidth: 280,
+          maxHeight: 240,
           overflowY: 'auto',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.5)'
+          boxShadow: '0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.06)'
         }}
       >
+        <div style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#94a3b8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: 10,
+          paddingBottom: 8,
+          borderBottom: '1px solid rgba(255,255,255,0.08)'
+        }}>
+          Sessions ({sessions.length})
+        </div>
+
         {sessions.length === 0 ? (
-          <div style={{ color: '#888' }}>No active sessions</div>
+          <div style={{ color: '#64748b', textAlign: 'center', padding: '12px 0' }}>
+            No active sessions
+          </div>
         ) : (
-          sessions.map((s) => (
-            <div key={s.sessionId} style={{ marginBottom: 6 }}>
-              <div style={{ color: '#8bb8ff', fontWeight: 'bold' }}>
-                {s.sessionId.slice(0, 8)}
+          sessions.map((s, i) => (
+            <div
+              key={s.sessionId}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)',
+                marginBottom: i < sessions.length - 1 ? 6 : 0
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 4
+              }}>
+                <span style={{
+                  color: '#cbd5e1',
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  fontWeight: 600
+                }}>
+                  {s.sessionId.slice(0, 8)}
+                </span>
+                <span style={{
+                  color: STATE_COLORS[s.petState],
+                  fontSize: 11,
+                  fontWeight: 500
+                }}>
+                  {STATE_LABELS[s.petState]}
+                </span>
               </div>
-              <div style={{ color: '#aaa', fontSize: 10 }}>
-                {s.cwd.split(/[\\/]/).slice(-2).join('/')}
+              <div style={{
+                color: '#64748b',
+                fontSize: 11,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4
+              }}>
+                <span>📁</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {s.cwd.split(/[\\/]/).slice(-2).join('/')}
+                </span>
               </div>
-              <div style={{ fontSize: 10 }}>
-                <span style={{ color: stateColor(s.petState) }}>{s.petState}</span>
-                {s.lastToolName && (
-                  <span style={{ color: '#888' }}> | {s.lastToolName}</span>
-                )}
-              </div>
+              {s.lastToolName && (
+                <div style={{ color: '#475569', fontSize: 10, marginTop: 3 }}>
+                  🔧 {s.lastToolName}
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
     </div>
   )
-}
-
-function stateColor(state: string): string {
-  switch (state) {
-    case 'running': return '#4ae04a'
-    case 'permissionRequest': return '#ffaa00'
-    case 'taskCompleted': return '#bb77ff'
-    default: return '#888'
-  }
 }

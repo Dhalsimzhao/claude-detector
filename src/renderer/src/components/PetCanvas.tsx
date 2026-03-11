@@ -24,6 +24,11 @@ export function PetCanvas({ state, frameIndex }: PetCanvasProps) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = SIZE * dpr
+    canvas.height = SIZE * dpr
+    ctx.scale(dpr, dpr)
+
     ctx.clearRect(0, 0, SIZE, SIZE)
 
     // Background color block
@@ -60,5 +65,10 @@ export function PetCanvas({ state, frameIndex }: PetCanvasProps) {
     ctx.fillText(state, SIZE / 2, y + h * 0.75)
   }, [state, frameIndex])
 
-  return <canvas ref={canvasRef} width={SIZE} height={SIZE} />
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ width: SIZE, height: SIZE }}
+    />
+  )
 }
