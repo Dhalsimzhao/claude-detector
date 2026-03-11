@@ -28,24 +28,29 @@ function App() {
     }
   }, [])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (dragRef.current && e.buttons === 1) {
-      const dx = e.screenX - dragRef.current.startX
-      const dy = e.screenY - dragRef.current.startY
-      dragRef.current = { startX: e.screenX, startY: e.screenY }
-      window.api.moveWindow(dx, dy)
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (dragRef.current && e.buttons === 1) {
+        const dx = e.screenX - dragRef.current.startX
+        const dy = e.screenY - dragRef.current.startY
+        dragRef.current = { startX: e.screenX, startY: e.screenY }
+        window.api.moveWindow(dx, dy)
+      }
     }
-  }, [])
-
-  const handleMouseUp = useCallback(() => {
-    dragRef.current = null
+    const handleMouseUp = () => {
+      dragRef.current = null
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
   }, [])
 
   return (
     <div
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
       style={{
         width: '100vw',
         height: '100vh',
