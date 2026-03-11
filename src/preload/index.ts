@@ -14,9 +14,6 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('theme-change', handler)
     return () => ipcRenderer.removeListener('theme-change', handler)
   },
-  showContextMenu: () => {
-    ipcRenderer.send('show-context-menu')
-  },
   onShowSessions: (callback: (sessions: SessionState[]) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, sessions: SessionState[]): void =>
       callback(sessions)

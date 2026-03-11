@@ -21,14 +21,8 @@ function App() {
     })
   }, [])
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault()
-    window.api.showContextMenu()
-  }
-
   return (
     <div
-      onContextMenu={handleContextMenu}
       style={{
         width: '100vw',
         height: '100vh',

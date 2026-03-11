@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -63,7 +63,7 @@ app.whenReady().then(async () => {
     }
   )
 
-  ipcMain.on('show-context-menu', (event) => {
+  petWindow.webContents.on('context-menu', () => {
     const menu = Menu.buildFromTemplate([
       {
         label: 'Theme',
@@ -106,7 +106,7 @@ app.whenReady().then(async () => {
         }
       }
     ])
-    menu.popup({ window: BrowserWindow.fromWebContents(event.sender) ?? undefined })
+    menu.popup({ window: petWindow ?? undefined })
   })
 })
 

@@ -12,7 +12,6 @@ declare global {
     api: {
       onSessionUpdate: (callback: (update: SessionUpdate) => void) => () => void
       onThemeChange: (callback: (theme: PetTheme) => void) => () => void
-      showContextMenu: () => void
       onShowSessions: (callback: (sessions: SessionState[]) => void) => () => void
     }
   }
