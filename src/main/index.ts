@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { createPetWindow } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
@@ -63,7 +63,9 @@ app.whenReady().then(async () => {
     }
   )
 
-  petWindow.webContents.on('context-menu', () => {
+  // Intercept Windows system context menu on drag region right-click
+  petWindow.on('system-context-menu', (event) => {
+    event.preventDefault()
     const menu = Menu.buildFromTemplate([
       {
         label: 'Theme',
@@ -107,12 +109,6 @@ app.whenReady().then(async () => {
       }
     ])
     menu.popup({ window: petWindow ?? undefined })
-  })
-
-  ipcMain.on('move-window', (_, dx: number, dy: number) => {
-    if (!petWindow) return
-    const [x, y] = petWindow.getPosition()
-    petWindow.setPosition(x + dx, y + dy)
   })
 })
 
