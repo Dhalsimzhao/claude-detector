@@ -14,14 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Build and package
-        run: npm run dist
+        run: pnpm run dist
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
