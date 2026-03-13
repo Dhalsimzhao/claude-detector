@@ -1,28 +1,23 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { PetState, SessionUpdate } from '../../../shared/types'
+import { SPRITE_CONFIGS, SpriteState } from '../spriteConfig'
 
-interface AnimationFrame {
-  state: PetState
+interface AnimationState {
+  spriteState: SpriteState
   frameIndex: number
-  totalFrames: number
+  sessions: SessionUpdate['sessions']
 }
 
-const FRAME_COUNTS: Record<PetState, number> = {
-  idle: 8,
-  running: 8,
-  permissionRequest: 4,
-  taskCompleted: 6
-}
+const TICK_MS = 1000 / 60
 
-const FPS = 8
-
-export function useAnimationState(): AnimationFrame & { sessions: SessionUpdate['sessions'] } {
+export function useAnimationState(): AnimationState {
   const [petState, setPetState] = useState<PetState>('idle')
+  const [dragging, setDragging] = useState(false)
   const [frameIndex, setFrameIndex] = useState(0)
   const [sessions, setSessions] = useState<SessionUpdate['sessions']>([])
-  const prevStateRef = useRef<PetState>('idle')
 
-  // Listen for session updates from main process
+  const spriteState: SpriteState = dragging ? 'dragging' : petState
+
   useEffect(() => {
     const unsubscribe = window.api.onSessionUpdate((update) => {
       setSessions(update.sessions)
@@ -31,27 +26,46 @@ export function useAnimationState(): AnimationFrame & { sessions: SessionUpdate[
     return unsubscribe
   }, [])
 
-  // Reset frame index when state changes
   useEffect(() => {
-    if (petState !== prevStateRef.current) {
-      setFrameIndex(0)
-      prevStateRef.current = petState
-    }
-  }, [petState])
+    const unsubscribe = window.api.onDragChange(setDragging)
+    return unsubscribe
+  }, [])
 
-  // Animation loop
+  // Reset frame and run animation loop
   useEffect(() => {
-    const totalFrames = FRAME_COUNTS[petState]
-    const interval = setInterval(() => {
-      setFrameIndex(prev => (prev + 1) % totalFrames)
-    }, 1000 / FPS)
-    return () => clearInterval(interval)
-  }, [petState])
+    setFrameIndex(0)
+
+    const config = SPRITE_CONFIGS[spriteState]
+    let currentFrame = 0
+    let ticksRemaining = config.durations[0]
+    let lastTime = performance.now()
+
+    let rafId: number
+    const tick = (now: number) => {
+      const elapsed = now - lastTime
+      lastTime = now
+
+      let ticksToProcess = Math.round(elapsed / TICK_MS)
+      while (ticksToProcess > 0) {
+        ticksRemaining--
+        ticksToProcess--
+        if (ticksRemaining <= 0) {
+          currentFrame = (currentFrame + 1) % config.frameCount
+          ticksRemaining = config.durations[currentFrame]
+          setFrameIndex(currentFrame)
+        }
+      }
+
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+
+    return () => cancelAnimationFrame(rafId)
+  }, [spriteState])
 
   return {
-    state: petState,
+    spriteState,
     frameIndex,
-    totalFrames: FRAME_COUNTS[petState],
     sessions
   }
 }

@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('api', {
       callback(sessions)
     ipcRenderer.on('show-sessions', handler)
     return () => ipcRenderer.removeListener('show-sessions', handler)
+  },
+  onDragChange: (callback: (dragging: boolean) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, dragging: boolean): void =>
+      callback(dragging)
+    ipcRenderer.on('drag-change', handler)
+    return () => ipcRenderer.removeListener('drag-change', handler)
   }
 })

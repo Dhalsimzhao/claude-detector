@@ -29,6 +29,22 @@ export function createPetWindow(): BrowserWindow {
 
   win.setIgnoreMouseEvents(false)
 
+  // Detect window dragging via will-move events
+  let dragTimeout: ReturnType<typeof setTimeout> | null = null
+  let isDragging = false
+
+  win.on('will-move', () => {
+    if (!isDragging) {
+      isDragging = true
+      win.webContents.send('drag-change', true)
+    }
+    if (dragTimeout) clearTimeout(dragTimeout)
+    dragTimeout = setTimeout(() => {
+      isDragging = false
+      win.webContents.send('drag-change', false)
+    }, 200)
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {

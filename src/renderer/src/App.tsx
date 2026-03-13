@@ -7,7 +7,7 @@ import { useAnimationState } from './hooks/useAnimationState'
 import { PetTheme, SessionState } from '../../shared/types'
 
 function App() {
-  const { state, frameIndex, sessions } = useAnimationState()
+  const { spriteState, frameIndex, sessions } = useAnimationState()
   const [theme, setTheme] = useState<PetTheme>('pokemon')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
 
@@ -39,8 +39,8 @@ function App() {
       } as React.CSSProperties}
     >
       {theme === 'blocks'
-        ? <PetCanvas state={state} frameIndex={frameIndex} />
-        : <PetSprite state={state} />
+        ? <PetCanvas state={spriteState} frameIndex={frameIndex} />
+        : <PetSprite state={spriteState} frameIndex={frameIndex} />
       }
       <SessionBadge sessions={sessions} />
       {detailSessions && (
