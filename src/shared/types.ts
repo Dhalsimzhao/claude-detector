@@ -2,7 +2,7 @@
 export type PetState = 'idle' | 'running' | 'permissionRequest' | 'taskCompleted'
 
 // Pet display themes
-export type PetTheme = 'blocks' | 'pokemon'
+export type PetTheme = 'blocks' | 'psyduck' | 'sherma' | 'flea'
 
 // Hook event names from Claude Code
 export type HookEventName =

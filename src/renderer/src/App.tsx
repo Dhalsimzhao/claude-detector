@@ -5,11 +5,19 @@ import { SessionBadge } from './components/SessionBadge'
 import { SessionPanel } from './components/SessionPanel'
 import { useAnimationState } from './hooks/useAnimationState'
 import { PetTheme, SessionState } from '../../shared/types'
+import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
+
+function toSpriteTheme(theme: PetTheme): SpriteTheme {
+  if (theme !== 'blocks' && theme in THEME_SPRITES) return theme
+  return 'psyduck'
+}
 
 function App() {
-  const { spriteState, frameIndex, sessions } = useAnimationState()
-  const [theme, setTheme] = useState<PetTheme>('pokemon')
+  const [theme, setTheme] = useState<PetTheme>('psyduck')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
+
+  const spriteTheme = toSpriteTheme(theme)
+  const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
 
   useEffect(() => {
     return window.api.onThemeChange(setTheme)
@@ -35,12 +43,12 @@ function App() {
         userSelect: 'none',
         // Near-invisible background so Windows captures mouse events
         // on transparent pixels instead of passing them through
-        background: 'rgba(0,0,0,0.01)'
+        background: 'rgba(0,0,0,0.005)'
       } as React.CSSProperties}
     >
       {theme === 'blocks'
         ? <PetCanvas state={spriteState} frameIndex={frameIndex} />
-        : <PetSprite state={spriteState} frameIndex={frameIndex} />
+        : <PetSprite theme={spriteTheme} state={spriteState} frameIndex={frameIndex} />
       }
       <SessionBadge sessions={sessions} />
       {detailSessions && (

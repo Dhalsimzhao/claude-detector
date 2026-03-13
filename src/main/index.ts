@@ -12,11 +12,17 @@ import { homedir } from 'os'
 const CONFIG_DIR = join(homedir(), '.claude-detector')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
+const VALID_THEMES: PetTheme[] = ['blocks', 'psyduck', 'sherma', 'flea']
+
 function readConfig(): { theme: PetTheme } {
   try {
-    return JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
+    const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
+    // Migrate old 'pokemon' theme name
+    if (config.theme === 'pokemon') config.theme = 'psyduck'
+    if (!VALID_THEMES.includes(config.theme)) config.theme = 'psyduck'
+    return config
   } catch {
-    return { theme: 'pokemon' }
+    return { theme: 'psyduck' }
   }
 }
 
@@ -44,28 +50,16 @@ function buildContextMenu(): Menu {
   return Menu.buildFromTemplate([
     {
       label: 'Theme',
-      submenu: [
-        {
-          label: 'Blocks',
-          type: 'radio',
-          checked: currentTheme === 'blocks',
-          click: () => {
-            currentTheme = 'blocks'
-            writeConfig({ theme: 'blocks' })
-            petWindow?.webContents.send('theme-change', 'blocks')
-          }
-        },
-        {
-          label: 'Pokemon',
-          type: 'radio',
-          checked: currentTheme === 'pokemon',
-          click: () => {
-            currentTheme = 'pokemon'
-            writeConfig({ theme: 'pokemon' })
-            petWindow?.webContents.send('theme-change', 'pokemon')
-          }
+      submenu: (['blocks', 'psyduck', 'sherma', 'flea'] as PetTheme[]).map((t) => ({
+        label: { blocks: 'Blocks', psyduck: 'Psyduck', sherma: 'Sherma', flea: 'Flea' }[t],
+        type: 'radio' as const,
+        checked: currentTheme === t,
+        click: () => {
+          currentTheme = t
+          writeConfig({ theme: t })
+          petWindow?.webContents.send('theme-change', t)
         }
-      ]
+      }))
     },
     {
       label: 'Show Sessions',

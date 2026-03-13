@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { PetState, SessionUpdate } from '../../../shared/types'
-import { SPRITE_CONFIGS, SpriteState } from '../spriteConfig'
+import { THEME_SPRITES, SpriteState, SpriteTheme } from '../spriteConfig'
 
 interface AnimationState {
   spriteState: SpriteState
@@ -10,7 +10,7 @@ interface AnimationState {
 
 const TICK_MS = 1000 / 60
 
-export function useAnimationState(): AnimationState {
+export function useAnimationState(theme: SpriteTheme): AnimationState {
   const [petState, setPetState] = useState<PetState>('idle')
   const [dragging, setDragging] = useState(false)
   const [frameIndex, setFrameIndex] = useState(0)
@@ -31,11 +31,13 @@ export function useAnimationState(): AnimationState {
     return unsubscribe
   }, [])
 
-  // Reset frame and run animation loop
+  // Animation loop for multi-frame sprites
   useEffect(() => {
     setFrameIndex(0)
 
-    const config = SPRITE_CONFIGS[spriteState]
+    const config = THEME_SPRITES[theme][spriteState]
+    if (config.frameCount <= 1) return // static sprites don't need frame animation
+
     let currentFrame = 0
     let ticksRemaining = config.durations[0]
     let lastTime = performance.now()
@@ -61,7 +63,7 @@ export function useAnimationState(): AnimationState {
     rafId = requestAnimationFrame(tick)
 
     return () => cancelAnimationFrame(rafId)
-  }, [spriteState])
+  }, [theme, spriteState])
 
   return {
     spriteState,

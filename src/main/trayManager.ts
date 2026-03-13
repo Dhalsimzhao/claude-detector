@@ -16,20 +16,12 @@ export function createTray(
     { type: 'separator' },
     {
       label: 'Theme',
-      submenu: [
-        {
-          label: 'Blocks',
-          type: 'radio',
-          checked: initialTheme === 'blocks',
-          click: () => onThemeChange('blocks')
-        },
-        {
-          label: 'Pokemon',
-          type: 'radio',
-          checked: initialTheme === 'pokemon',
-          click: () => onThemeChange('pokemon')
-        }
-      ]
+      submenu: (['blocks', 'psyduck', 'sherma', 'flea'] as PetTheme[]).map((t) => ({
+        label: { blocks: 'Blocks', psyduck: 'Psyduck', sherma: 'Sherma', flea: 'Flea' }[t],
+        type: 'radio' as const,
+        checked: initialTheme === t,
+        click: () => onThemeChange(t)
+      }))
     },
     { type: 'separator' },
     { label: 'Quit', click: onQuit }
