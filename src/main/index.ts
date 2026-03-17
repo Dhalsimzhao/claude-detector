@@ -1,10 +1,10 @@
-import { app, BrowserWindow, Menu, screen } from 'electron'
-import { createPetWindow } from './windowManager'
+import { app, BrowserWindow, Menu, screen, ipcMain } from 'electron'
+import { createPetWindow, PET_SIZE, WINDOW_PADDING } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
 import { SessionManager } from './sessionManager'
 import { installHooks } from './hookInstaller'
-import { HookEventPayload, PetTheme } from '../shared/types'
+import { HookEventPayload, PetTheme, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
@@ -13,6 +13,14 @@ const CONFIG_DIR = join(homedir(), '.claude-detector')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
 const VALID_THEMES: PetTheme[] = ['blocks', 'psyduck', 'sherma', 'flea']
+
+// Default window dimensions
+const DEFAULT_WIN_WIDTH = PET_SIZE + WINDOW_PADDING * 2
+const DEFAULT_WIN_HEIGHT = PET_SIZE + WINDOW_PADDING * 2 + 30
+
+// Permission dialog dimensions
+const DIALOG_WIN_WIDTH = 320
+const DIALOG_WIN_HEIGHT = 240
 
 function readConfig(): { theme: PetTheme } {
   try {
@@ -36,15 +44,43 @@ let currentTheme: PetTheme = readConfig().theme
 
 const sessionManager = new SessionManager()
 
-// Handle timer-based state changes (e.g. needsAttention)
+// Handle timer-based state changes
 sessionManager.setOnChange((update) => {
   petWindow?.webContents.send('session-update', update)
 })
 
-const hookServer = new HookServer((event: HookEventPayload) => {
-  const update = sessionManager.handleEvent(event)
-  petWindow?.webContents.send('session-update', update)
+// When a permission request arrives: notify renderer + expand window
+sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
+  if (!petWindow) return
+  const [wx, wy] = petWindow.getPosition()
+  // Anchor to bottom-right corner
+  const newX = wx - (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
+  const newY = wy - (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+  petWindow.setSize(DIALOG_WIN_WIDTH, DIALOG_WIN_HEIGHT)
+  petWindow.setPosition(newX, newY)
+  petWindow.webContents.send('permission-request', info)
 })
+
+// Listen for user's permission decision from renderer
+ipcMain.on('permission-response', (_event, requestId: string, decision: PermissionDecision) => {
+  sessionManager.resolvePermission(requestId, decision)
+  // Restore window to default size, anchoring bottom-right
+  if (petWindow) {
+    const [wx, wy] = petWindow.getPosition()
+    const newX = wx + (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
+    const newY = wy + (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+    petWindow.setSize(DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
+    petWindow.setPosition(newX, newY)
+  }
+})
+
+const hookServer = new HookServer(
+  (event: HookEventPayload) => {
+    const update = sessionManager.handleEvent(event)
+    petWindow?.webContents.send('session-update', update)
+  },
+  (info: PermissionRequestInfo) => sessionManager.requestPermission(info)
+)
 
 function buildContextMenu(): Menu {
   return Menu.buildFromTemplate([

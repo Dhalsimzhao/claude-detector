@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { PetTheme, SessionState, SessionUpdate } from '../../shared/types'
+import { PetTheme, SessionState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../../shared/types'
 
 declare global {
   interface Window {
@@ -9,6 +9,8 @@ declare global {
       onThemeChange: (callback: (theme: PetTheme) => void) => () => void
       onShowSessions: (callback: (sessions: SessionState[]) => void) => () => void
       onDragChange: (callback: (dragging: boolean) => void) => () => void
+      onPermissionRequest: (callback: (info: PermissionRequestInfo) => void) => () => void
+      respondPermission: (requestId: string, decision: PermissionDecision) => void
     }
   }
 }

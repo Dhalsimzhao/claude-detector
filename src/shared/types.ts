@@ -45,3 +45,14 @@ export interface SessionUpdate {
   sessions: SessionState[]
   activePetState: PetState // resolved state for pet display
 }
+
+// Permission request from PreToolUse hook
+export interface PermissionRequestInfo {
+  requestId: string
+  sessionId: string
+  toolName: string
+  toolInput: Record<string, unknown>
+  timestamp: number
+}
+
+export type PermissionDecision = 'approve' | 'deny'

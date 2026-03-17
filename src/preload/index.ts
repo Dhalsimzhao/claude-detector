@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { PetTheme, SessionState, SessionUpdate } from '../shared/types'
+import { PetTheme, SessionState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
   onSessionUpdate: (callback: (update: SessionUpdate) => void) => {
@@ -25,5 +25,14 @@ contextBridge.exposeInMainWorld('api', {
       callback(dragging)
     ipcRenderer.on('drag-change', handler)
     return () => ipcRenderer.removeListener('drag-change', handler)
+  },
+  onPermissionRequest: (callback: (info: PermissionRequestInfo) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, info: PermissionRequestInfo): void =>
+      callback(info)
+    ipcRenderer.on('permission-request', handler)
+    return () => ipcRenderer.removeListener('permission-request', handler)
+  },
+  respondPermission: (requestId: string, decision: PermissionDecision): void => {
+    ipcRenderer.send('permission-response', requestId, decision)
   }
 })

@@ -1,15 +1,31 @@
-import { HookEventPayload, SessionState, PetState, SessionUpdate } from '../shared/types'
+import { HookEventPayload, SessionState, PetState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 
 type OnChangeCallback = (update: SessionUpdate) => void
+type OnPermissionRequestCallback = (info: PermissionRequestInfo) => void
+
+interface PendingPermission {
+  info: PermissionRequestInfo
+  resolve: (decision: PermissionDecision) => void
+  reject: (err: Error) => void
+  timer: ReturnType<typeof setTimeout>
+}
+
+const PERMISSION_TIMEOUT_MS = 115000
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private taskCompletedTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private pendingPermissions = new Map<string, PendingPermission>()
   private onChange: OnChangeCallback | null = null
+  private onPermissionRequestNotify: OnPermissionRequestCallback | null = null
 
   setOnChange(callback: OnChangeCallback): void {
     this.onChange = callback
+  }
+
+  setOnPermissionRequest(callback: OnPermissionRequestCallback): void {
+    this.onPermissionRequestNotify = callback
   }
 
   handleEvent(event: HookEventPayload): SessionUpdate {
@@ -77,6 +93,8 @@ export class SessionManager {
       case 'SessionEnd':
         session.petState = 'idle'
         this.clearTimer(this.taskCompletedTimers, session_id)
+        // Reject any pending permissions for this session
+        this.rejectPendingPermissionsForSession(session_id)
         // Remove session after delay
         this.clearTimer(this.cleanupTimers, session_id)
         this.cleanupTimers.set(session_id, setTimeout(() => {
@@ -87,6 +105,51 @@ export class SessionManager {
     }
 
     return this.getUpdate()
+  }
+
+  requestPermission(info: PermissionRequestInfo): Promise<PermissionDecision> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pendingPermissions.delete(info.requestId)
+        reject(new Error('permission request timed out'))
+      }, PERMISSION_TIMEOUT_MS)
+
+      this.pendingPermissions.set(info.requestId, { info, resolve, reject, timer })
+
+      // Update pet state to permissionRequest
+      const session = this.sessions.get(info.sessionId)
+      if (session) {
+        session.petState = 'permissionRequest'
+        this.onChange?.(this.getUpdate())
+      }
+
+      this.onPermissionRequestNotify?.(info)
+    })
+  }
+
+  resolvePermission(requestId: string, decision: PermissionDecision): void {
+    const pending = this.pendingPermissions.get(requestId)
+    if (!pending) return
+    clearTimeout(pending.timer)
+    this.pendingPermissions.delete(requestId)
+    pending.resolve(decision)
+
+    // Restore session to running state
+    const session = this.sessions.get(pending.info.sessionId)
+    if (session && session.petState === 'permissionRequest') {
+      session.petState = 'running'
+      this.onChange?.(this.getUpdate())
+    }
+  }
+
+  private rejectPendingPermissionsForSession(sessionId: string): void {
+    for (const [requestId, pending] of this.pendingPermissions) {
+      if (pending.info.sessionId === sessionId) {
+        clearTimeout(pending.timer)
+        this.pendingPermissions.delete(requestId)
+        pending.reject(new Error('session ended'))
+      }
+    }
   }
 
   private clearTimer(timers: Map<string, ReturnType<typeof setTimeout>>, id: string): void {

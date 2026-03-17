@@ -53,7 +53,7 @@ export function installHooks(): void {
       hooks: [{
         type: 'command',
         command: hookCommand,
-        timeout: 5
+        timeout: event === 'PreToolUse' ? 120 : 5
       }]
     })
   }

@@ -3,8 +3,9 @@ import { PetCanvas } from './components/PetCanvas'
 import { PetSprite } from './components/PetSprite'
 import { SessionBadge } from './components/SessionBadge'
 import { SessionPanel } from './components/SessionPanel'
+import { PermissionDialog } from './components/PermissionDialog'
 import { useAnimationState } from './hooks/useAnimationState'
-import { PetTheme, SessionState } from '../../shared/types'
+import { PetTheme, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
@@ -15,6 +16,7 @@ function toSpriteTheme(theme: PetTheme): SpriteTheme {
 function App() {
   const [theme, setTheme] = useState<PetTheme>('psyduck')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
+  const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
@@ -28,6 +30,18 @@ function App() {
       setDetailSessions(sessions)
     })
   }, [])
+
+  useEffect(() => {
+    return window.api.onPermissionRequest((info) => {
+      setPermissionRequest(info)
+    })
+  }, [])
+
+  function handlePermissionDecide(decision: 'approve' | 'deny') {
+    if (!permissionRequest) return
+    window.api.respondPermission(permissionRequest.requestId, decision)
+    setPermissionRequest(null)
+  }
 
   return (
     <div
@@ -55,6 +69,12 @@ function App() {
         <SessionPanel
           sessions={detailSessions}
           onClose={() => setDetailSessions(null)}
+        />
+      )}
+      {permissionRequest && (
+        <PermissionDialog
+          info={permissionRequest}
+          onDecide={handlePermissionDecide}
         />
       )}
     </div>

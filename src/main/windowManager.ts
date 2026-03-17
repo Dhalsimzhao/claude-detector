@@ -2,8 +2,8 @@ import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
-const PET_SIZE = 128
-const WINDOW_PADDING = 40
+export const PET_SIZE = 128
+export const WINDOW_PADDING = 40
 
 export function createPetWindow(): BrowserWindow {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
