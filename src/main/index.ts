@@ -150,7 +150,22 @@ app.on('before-quit', () => {
   hookServer.stop()
 })
 
-// Keep app running in tray when window closed
+// Keep app running in tray when window closed (Windows)
+// macOS: standard behavior — quit when all windows close
 app.on('window-all-closed', () => {
-  // Do nothing - app stays alive via tray
+  if (process.platform === 'darwin') {
+    hookServer.stop()
+    app.quit()
+  }
+  // Windows: do nothing — app stays alive via tray
+})
+
+// macOS: re-create window when dock icon is clicked
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    petWindow = createPetWindow()
+    petWindow.webContents.on('did-finish-load', () => {
+      petWindow?.webContents.send('theme-change', currentTheme)
+    })
+  }
 })

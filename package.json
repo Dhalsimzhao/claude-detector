@@ -48,6 +48,17 @@
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
     },
+    "mac": {
+      "icon": "resources/icon.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}.${ext}"
+    },
     "forceCodeSigning": false
   },
   "dependencies": {

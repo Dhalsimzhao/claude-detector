@@ -57,7 +57,7 @@ function App() {
         userSelect: 'none',
         // Near-invisible background so Windows captures mouse events
         // on transparent pixels instead of passing them through
-        background: 'rgba(0,0,0,0.005)'
+        background: window.api.platform === 'win32' ? 'rgba(0,0,0,0.005)' : 'transparent'
       } as React.CSSProperties}
     >
       {theme === 'blocks'

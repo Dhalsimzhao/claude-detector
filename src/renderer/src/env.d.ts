@@ -5,6 +5,7 @@ import { PetTheme, SessionState, SessionUpdate, PermissionRequestInfo, Permissio
 declare global {
   interface Window {
     api: {
+      platform: NodeJS.Platform
       onSessionUpdate: (callback: (update: SessionUpdate) => void) => () => void
       onThemeChange: (callback: (theme: PetTheme) => void) => () => void
       onShowSessions: (callback: (sessions: SessionState[]) => void) => () => void

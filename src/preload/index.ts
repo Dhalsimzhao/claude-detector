@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { PetTheme, SessionState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform,
   onSessionUpdate: (callback: (update: SessionUpdate) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, update: SessionUpdate): void =>
       callback(update)

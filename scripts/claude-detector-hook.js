@@ -6,7 +6,8 @@ const path = require('path')
 const crypto = require('crypto')
 
 // Read port from config file
-const portFile = path.join(process.env.HOME || process.env.USERPROFILE, '.claude-detector', 'port')
+const os = require('os')
+const portFile = path.join(os.homedir(), '.claude-detector', 'port')
 
 let port
 try {

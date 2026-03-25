@@ -2,6 +2,7 @@ import express from 'express'
 import http from 'http'
 import fs from 'fs'
 import path from 'path'
+import { homedir } from 'os'
 import { HookEventPayload, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 
 type EventCallback = (event: HookEventPayload) => void
@@ -77,15 +78,13 @@ export class HookServer {
   }
 
   private writePortFile(port: number): void {
-    const home = process.env.HOME || process.env.USERPROFILE || ''
-    const dir = path.join(home, '.claude-detector')
+    const dir = path.join(homedir(), '.claude-detector')
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
     fs.writeFileSync(path.join(dir, 'port'), String(port), 'utf-8')
   }
 
   private removePortFile(): void {
-    const home = process.env.HOME || process.env.USERPROFILE || ''
-    const portFile = path.join(home, '.claude-detector', 'port')
+    const portFile = path.join(homedir(), '.claude-detector', 'port')
     try { fs.unlinkSync(portFile) } catch { /* ignore */ }
   }
 }

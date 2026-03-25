@@ -1,18 +1,16 @@
 import fs from 'fs'
 import path from 'path'
+import { homedir } from 'os'
 
 const HOOK_IDENTIFIER = 'claude-detector-hook'
 const HOOK_EVENTS = ['SessionStart', 'SessionEnd', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'Notification', 'Stop']
 
 function getSettingsPath(): string {
-  const home = process.env.HOME || process.env.USERPROFILE || ''
-  return path.join(home, '.claude', 'settings.json')
+  return path.join(homedir(), '.claude', 'settings.json')
 }
 
 function getHookScriptPath(): string {
-  // Use the bundled hook script path
-  const home = process.env.HOME || process.env.USERPROFILE || ''
-  return path.join(home, '.claude-detector', 'hook.js').replace(/\\/g, '/')
+  return path.join(homedir(), '.claude-detector', 'hook.js').replace(/\\/g, '/')
 }
 
 function readSettings(): Record<string, unknown> {
@@ -61,8 +59,7 @@ export function installHooks(): void {
   writeSettings(settings)
 
   // Copy hook script to ~/.claude-detector/
-  const home = process.env.HOME || process.env.USERPROFILE || ''
-  const destDir = path.join(home, '.claude-detector')
+  const destDir = path.join(homedir(), '.claude-detector')
   if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
 
   // In dev: __dirname is src/main/, in production: out/main/
