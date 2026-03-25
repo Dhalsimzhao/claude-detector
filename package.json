@@ -49,7 +49,7 @@
       "artifactName": "${productName}-${version}-portable.${ext}"
     },
     "mac": {
-      "icon": "resources/icon.png",
+      "icon": "resources/icon-mac.png",
       "target": [
         "dmg",
         "zip"
