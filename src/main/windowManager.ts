@@ -1,18 +1,29 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
+import { DialogStyle } from '../shared/types'
 
 export const PET_SIZE = 128
 export const WINDOW_PADDING = 40
 
-export function createPetWindow(): BrowserWindow {
+// Bubble mode pre-allocates a larger window so no resize is needed on dialog show
+export const BUBBLE_WIN_WIDTH = 320
+export const BUBBLE_WIN_HEIGHT = 310
+
+export function createPetWindow(dialogStyle: DialogStyle): BrowserWindow {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
 
+  const defaultW = PET_SIZE + WINDOW_PADDING * 2
+  const defaultH = PET_SIZE + WINDOW_PADDING * 2 + 30
+  const isBubble = dialogStyle === 'bubble'
+  const winW = isBubble ? BUBBLE_WIN_WIDTH : defaultW
+  const winH = isBubble ? BUBBLE_WIN_HEIGHT : defaultH
+
   const win = new BrowserWindow({
-    width: PET_SIZE + WINDOW_PADDING * 2,
-    height: PET_SIZE + WINDOW_PADDING * 2 + 30,
-    x: screenWidth - PET_SIZE - WINDOW_PADDING * 2 - 20,
-    y: screenHeight - PET_SIZE - WINDOW_PADDING * 2 - 50,
+    width: winW,
+    height: winH,
+    x: screenWidth - winW - 20,
+    y: screenHeight - winH - 50,
     frame: false,
     transparent: true,
     alwaysOnTop: true,

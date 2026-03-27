@@ -57,3 +57,6 @@ export interface PermissionRequestInfo {
 }
 
 export type PermissionDecision = 'approve' | 'deny'
+
+// Permission dialog display style
+export type DialogStyle = 'panel' | 'bubble'

@@ -1,10 +1,10 @@
 import { app, BrowserWindow, Menu, screen, ipcMain } from 'electron'
-import { createPetWindow, PET_SIZE, WINDOW_PADDING } from './windowManager'
+import { createPetWindow, PET_SIZE, WINDOW_PADDING, BUBBLE_WIN_WIDTH, BUBBLE_WIN_HEIGHT } from './windowManager'
 import { createTray } from './trayManager'
 import { HookServer } from './hookServer'
 import { SessionManager } from './sessionManager'
 import { installHooks } from './hookInstaller'
-import { HookEventPayload, PetTheme, PermissionRequestInfo, PermissionDecision } from '../shared/types'
+import { HookEventPayload, PetTheme, DialogStyle, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
@@ -13,34 +13,46 @@ const CONFIG_DIR = join(homedir(), '.claude-detector')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
 const VALID_THEMES: PetTheme[] = ['blocks', 'psyduck', 'sherma', 'flea']
+const VALID_DIALOG_STYLES: DialogStyle[] = ['panel', 'bubble']
 
 // Default window dimensions
 const DEFAULT_WIN_WIDTH = PET_SIZE + WINDOW_PADDING * 2
 const DEFAULT_WIN_HEIGHT = PET_SIZE + WINDOW_PADDING * 2 + 30
 
-// Permission dialog dimensions
-const DIALOG_WIN_WIDTH = 320
-const DIALOG_WIN_HEIGHT = 240
+// Permission dialog dimensions (panel mode only — bubble is pre-sized)
+const DIALOG_PANEL_WIDTH = 320
+const DIALOG_PANEL_HEIGHT = 240
 
-function readConfig(): { theme: PetTheme } {
+interface AppConfig {
+  theme: PetTheme
+  dialogStyle: DialogStyle
+  autoApprove: boolean
+}
+
+function readConfig(): AppConfig {
   try {
     const config = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
-    // Migrate old 'pokemon' theme name
     if (config.theme === 'pokemon') config.theme = 'psyduck'
     if (!VALID_THEMES.includes(config.theme)) config.theme = 'psyduck'
+    if (!VALID_DIALOG_STYLES.includes(config.dialogStyle)) config.dialogStyle = 'panel'
+    if (typeof config.autoApprove !== 'boolean') config.autoApprove = false
     return config
   } catch {
-    return { theme: 'psyduck' }
+    return { theme: 'psyduck', dialogStyle: 'panel', autoApprove: false }
   }
 }
 
-function writeConfig(config: { theme: PetTheme }): void {
+function writeConfig(config: Partial<AppConfig>): void {
   mkdirSync(CONFIG_DIR, { recursive: true })
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2))
+  const existing = readConfig()
+  writeFileSync(CONFIG_PATH, JSON.stringify({ ...existing, ...config }, null, 2))
 }
 
 let petWindow: BrowserWindow | null = null
-let currentTheme: PetTheme = readConfig().theme
+const initialConfig = readConfig()
+let currentTheme: PetTheme = initialConfig.theme
+let currentDialogStyle: DialogStyle = initialConfig.dialogStyle
+let currentAutoApprove: boolean = initialConfig.autoApprove
 
 const sessionManager = new SessionManager()
 
@@ -60,29 +72,73 @@ function clampToDisplay(anchorX: number, anchorY: number, x: number, y: number, 
   ]
 }
 
-// When a permission request arrives: notify renderer + expand window
-sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
+// Get current window base height (depends on dialog style)
+function getBaseHeight(): number {
+  return currentDialogStyle === 'bubble' ? BUBBLE_WIN_HEIGHT : DEFAULT_WIN_HEIGHT
+}
+
+// Expand window for panel mode (bubble mode is pre-sized, no resize needed)
+function expandWindowForPanel(dw: number, dh: number): void {
   if (!petWindow) return
   const [wx, wy] = petWindow.getPosition()
-  const rawX = wx - (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
-  const rawY = wy - (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
-  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DIALOG_WIN_WIDTH, DIALOG_WIN_HEIGHT)
-  petWindow.setSize(DIALOG_WIN_WIDTH, DIALOG_WIN_HEIGHT)
-  petWindow.setPosition(newX, newY)
-  petWindow.webContents.send('permission-request', info)
+  const rawX = wx - Math.floor((dw - DEFAULT_WIN_WIDTH) / 2)
+  const rawY = wy - (dh - getBaseHeight())
+  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, dw, dh)
+  petWindow.setBounds({ x: newX, y: newY, width: dw, height: dh })
+}
+
+function restoreWindowForPanel(): void {
+  if (!petWindow) return
+  const [wx, wy] = petWindow.getPosition()
+  const [cw, ch] = petWindow.getSize()
+  const baseH = getBaseHeight()
+  const rawX = wx + Math.floor((cw - DEFAULT_WIN_WIDTH) / 2)
+  const rawY = wy + (ch - baseH)
+  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DEFAULT_WIN_WIDTH, baseH)
+  petWindow.setBounds({ x: newX, y: newY, width: DEFAULT_WIN_WIDTH, height: baseH })
+}
+
+// Resize window when switching between dialog styles
+function resizeForDialogStyle(style: DialogStyle): void {
+  if (!petWindow) return
+  const [wx, wy] = petWindow.getPosition()
+  const [cw, ch] = petWindow.getSize()
+  const newW = style === 'bubble' ? BUBBLE_WIN_WIDTH : DEFAULT_WIN_WIDTH
+  const newH = style === 'bubble' ? BUBBLE_WIN_HEIGHT : DEFAULT_WIN_HEIGHT
+  const rawX = wx + Math.floor((cw - newW) / 2)
+  const rawY = wy + (ch - newH)
+  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, newW, newH)
+  petWindow.setBounds({ x: newX, y: newY, width: newW, height: newH })
+}
+
+// When a permission request arrives
+sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
+  if (!petWindow) return
+
+  // Auto-approve if enabled — show toast, no resize needed
+  if (currentAutoApprove) {
+    sessionManager.resolvePermission(info.requestId, 'approve')
+    petWindow.webContents.send('auto-approve-toast', info.toolName, info.toolInput)
+    return
+  }
+
+  if (currentDialogStyle === 'bubble') {
+    // Bubble mode: window is pre-sized, just show the dialog
+    petWindow.webContents.send('permission-request', info)
+  } else {
+    // Panel mode: resize then show
+    expandWindowForPanel(DIALOG_PANEL_WIDTH, DIALOG_PANEL_HEIGHT)
+    petWindow.webContents.send('permission-request', info)
+  }
 })
 
 // Listen for user's permission decision from renderer
 ipcMain.on('permission-response', (_event, requestId: string, decision: PermissionDecision) => {
   sessionManager.resolvePermission(requestId, decision)
-  if (petWindow) {
-    const [wx, wy] = petWindow.getPosition()
-    const rawX = wx + (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
-    const rawY = wy + (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
-    const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
-    petWindow.setSize(DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
-    petWindow.setPosition(newX, newY)
+  if (currentDialogStyle === 'panel') {
+    restoreWindowForPanel()
   }
+  // Bubble mode: no resize needed
 })
 
 const hookServer = new HookServer(
@@ -109,6 +165,29 @@ function buildContextMenu(): Menu {
       }))
     },
     {
+      label: 'Dialog Style',
+      submenu: ([['panel', 'Panel'], ['bubble', 'Bubble']] as [DialogStyle, string][]).map(([s, label]) => ({
+        label,
+        type: 'radio' as const,
+        checked: currentDialogStyle === s,
+        click: () => {
+          currentDialogStyle = s
+          writeConfig({ dialogStyle: s })
+          resizeForDialogStyle(s)
+          petWindow?.webContents.send('dialog-style-change', s)
+        }
+      }))
+    },
+    {
+      label: 'Auto Approve',
+      type: 'checkbox',
+      checked: currentAutoApprove,
+      click: (menuItem) => {
+        currentAutoApprove = menuItem.checked
+        writeConfig({ autoApprove: menuItem.checked })
+      }
+    },
+    {
       label: 'Show Sessions',
       click: () => {
         const sessions = sessionManager.getUpdate().sessions
@@ -130,10 +209,11 @@ app.whenReady().then(async () => {
   installHooks()
   await hookServer.start()
 
-  petWindow = createPetWindow()
+  petWindow = createPetWindow(currentDialogStyle)
 
   petWindow.webContents.on('did-finish-load', () => {
     petWindow?.webContents.send('theme-change', currentTheme)
+    petWindow?.webContents.send('dialog-style-change', currentDialogStyle)
   })
 
   createTray(
@@ -175,7 +255,7 @@ app.on('window-all-closed', () => {
 // macOS: re-create window when dock icon is clicked
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    petWindow = createPetWindow()
+    petWindow = createPetWindow(currentDialogStyle)
     petWindow.webContents.on('did-finish-load', () => {
       petWindow?.webContents.send('theme-change', currentTheme)
     })

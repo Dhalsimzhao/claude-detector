@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { PetTheme, SessionState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../shared/types'
+import { PetTheme, DialogStyle, SessionState, SessionUpdate, PermissionRequestInfo, PermissionDecision } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('show-sessions', handler)
     return () => ipcRenderer.removeListener('show-sessions', handler)
   },
+  onDialogStyleChange: (callback: (style: DialogStyle) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, style: DialogStyle): void =>
+      callback(style)
+    ipcRenderer.on('dialog-style-change', handler)
+    return () => ipcRenderer.removeListener('dialog-style-change', handler)
+  },
   onDragChange: (callback: (dragging: boolean) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, dragging: boolean): void =>
       callback(dragging)
@@ -32,6 +38,12 @@ contextBridge.exposeInMainWorld('api', {
       callback(info)
     ipcRenderer.on('permission-request', handler)
     return () => ipcRenderer.removeListener('permission-request', handler)
+  },
+  onAutoApproveToast: (callback: (toolName: string, toolInput: Record<string, unknown>) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, toolName: string, toolInput: Record<string, unknown>): void =>
+      callback(toolName, toolInput)
+    ipcRenderer.on('auto-approve-toast', handler)
+    return () => ipcRenderer.removeListener('auto-approve-toast', handler)
   },
   respondPermission: (requestId: string, decision: PermissionDecision): void => {
     ipcRenderer.send('permission-response', requestId, decision)

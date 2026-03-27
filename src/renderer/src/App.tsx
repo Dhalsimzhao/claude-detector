@@ -5,7 +5,7 @@ import { SessionBadge } from './components/SessionBadge'
 import { SessionPanel } from './components/SessionPanel'
 import { PermissionDialog } from './components/PermissionDialog'
 import { useAnimationState } from './hooks/useAnimationState'
-import { PetTheme, SessionState, PermissionRequestInfo } from '../../shared/types'
+import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
@@ -16,13 +16,19 @@ function toSpriteTheme(theme: PetTheme): SpriteTheme {
 function App() {
   const [theme, setTheme] = useState<PetTheme>('psyduck')
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
+  const [dialogStyle, setDialogStyle] = useState<DialogStyle>('panel')
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
+  const [toastText, setToastText] = useState<string | null>(null)
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
 
   useEffect(() => {
     return window.api.onThemeChange(setTheme)
+  }, [])
+
+  useEffect(() => {
+    return window.api.onDialogStyleChange(setDialogStyle)
   }, [])
 
   useEffect(() => {
@@ -34,6 +40,22 @@ function App() {
   useEffect(() => {
     return window.api.onPermissionRequest((info) => {
       setPermissionRequest(info)
+    })
+  }, [])
+
+  useEffect(() => {
+    return window.api.onAutoApproveToast((toolName, toolInput) => {
+      let detail = ''
+      if (toolName === 'Bash' && typeof toolInput.command === 'string') {
+        detail = toolInput.command as string
+      } else if (typeof toolInput.file_path === 'string') {
+        const fp = toolInput.file_path as string
+        // Keep last 2 path segments for readability
+        const parts = fp.split('/')
+        detail = parts.length > 2 ? '.../' + parts.slice(-2).join('/') : fp
+      }
+      setToastText(detail ? `${toolName}: ${detail}` : toolName)
+      setTimeout(() => setToastText(null), 2500)
     })
   }, [])
 
@@ -49,8 +71,9 @@ function App() {
         width: '100vw',
         height: '100vh',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         position: 'relative',
         WebkitAppRegion: 'drag',
         cursor: 'grab',
@@ -74,8 +97,45 @@ function App() {
       {permissionRequest && (
         <PermissionDialog
           info={permissionRequest}
+          dialogStyle={dialogStyle}
           onDecide={handlePermissionDecide}
         />
+      )}
+      {toastText && (
+        <div style={{
+          position: 'absolute',
+          bottom: '110px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '2px solid #222',
+            borderRadius: '14px',
+            padding: '6px 12px',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: '#222',
+            fontFamily: '"SF Mono", "Fira Code", monospace',
+            boxShadow: '1px 2px 0px #222',
+            width: '88%',
+            maxWidth: '290px',
+            wordBreak: 'break-all',
+            textAlign: 'center',
+            lineHeight: '1.4'
+          }}>
+            {toastText}
+          </div>
+          <div style={{
+            width: '8px', height: '6px', marginTop: '2px',
+            background: '#fff', border: '2px solid #222',
+            borderRadius: '50%', boxShadow: '1px 1px 0px #222'
+          }} />
+        </div>
       )}
     </div>
   )
