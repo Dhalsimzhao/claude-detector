@@ -8,7 +8,7 @@ export const WINDOW_PADDING = 40
 
 // Bubble mode pre-allocates a larger window so no resize is needed on dialog show
 export const BUBBLE_WIN_WIDTH = 320
-export const BUBBLE_WIN_HEIGHT = 310
+export const BUBBLE_WIN_HEIGHT = 420
 
 export function createPetWindow(dialogStyle: DialogStyle): BrowserWindow {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize

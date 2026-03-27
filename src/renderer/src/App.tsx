@@ -83,11 +83,13 @@ function App() {
         background: window.api.platform === 'win32' ? 'rgba(0,0,0,0.005)' : 'transparent'
       } as React.CSSProperties}
     >
-      {theme === 'blocks'
-        ? <PetCanvas state={spriteState} frameIndex={frameIndex} />
-        : <PetSprite theme={spriteTheme} state={spriteState} frameIndex={frameIndex} />
-      }
-      <SessionBadge sessions={sessions} />
+      <div style={{ position: 'relative' }}>
+        {theme === 'blocks'
+          ? <PetCanvas state={spriteState} frameIndex={frameIndex} />
+          : <PetSprite theme={spriteTheme} state={spriteState} frameIndex={frameIndex} />
+        }
+        <SessionBadge sessions={sessions} />
+      </div>
       {detailSessions && (
         <SessionPanel
           sessions={detailSessions}

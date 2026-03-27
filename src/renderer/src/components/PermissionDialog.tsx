@@ -194,6 +194,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         position: 'relative',
         width: '88%',
         maxWidth: '280px',
+        maxHeight: '230px',
         background: '#fff',
         borderRadius: '20px',
         border: '2.5px solid #222',
@@ -202,7 +203,9 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", sans-serif',
         boxShadow: '2px 3px 0px #222',
         overflow: 'hidden',
-        WebkitAppRegion: 'drag'
+        WebkitAppRegion: 'drag',
+        display: 'flex',
+        flexDirection: 'column'
       } as React.CSSProperties}>
         {/* Progress bar */}
         <div style={{
@@ -239,9 +242,9 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
             style={{
               fontSize: '10px', lineHeight: '1.4',
               background: '#f5f5f5', borderRadius: '6px', border: '1px solid #e5e5e5',
-              padding: '5px 8px', wordBreak: 'break-all', maxHeight: '70px', overflow: 'auto',
+              padding: '5px 8px', wordBreak: 'break-all', maxHeight: '55px', overflow: 'auto',
               fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
-              marginBottom: '10px',
+              marginBottom: '10px', flex: '0 1 auto',
               WebkitAppRegion: 'no-drag', cursor: 'default'
             } as React.CSSProperties}
           >
