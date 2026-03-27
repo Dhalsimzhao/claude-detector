@@ -39,9 +39,9 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('permission-request', handler)
     return () => ipcRenderer.removeListener('permission-request', handler)
   },
-  onAutoApproveToast: (callback: (toolName: string, toolInput: Record<string, unknown>, sessionId: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, toolName: string, toolInput: Record<string, unknown>, sessionId: string): void =>
-      callback(toolName, toolInput, sessionId)
+  onAutoApproveToast: (callback: (toolName: string, toolInput: Record<string, unknown>, sessionId: string, cwd: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, toolName: string, toolInput: Record<string, unknown>, sessionId: string, cwd: string): void =>
+      callback(toolName, toolInput, sessionId, cwd)
     ipcRenderer.on('auto-approve-toast', handler)
     return () => ipcRenderer.removeListener('auto-approve-toast', handler)
   },

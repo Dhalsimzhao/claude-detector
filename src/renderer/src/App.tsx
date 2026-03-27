@@ -7,7 +7,7 @@ import { PermissionDialog } from './components/PermissionDialog'
 import { useAnimationState } from './hooks/useAnimationState'
 import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
-import { sessionToHue } from './utils'
+import { getSessionColor, SessionColor } from './utils'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
   if (theme !== 'blocks' && theme in THEME_SPRITES) return theme
@@ -19,7 +19,7 @@ function App() {
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
   const [dialogStyle, setDialogStyle] = useState<DialogStyle>('panel')
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
-  const [toast, setToast] = useState<{ text: string; hue: number } | null>(null)
+  const [toast, setToast] = useState<{ text: string; project: string; color: SessionColor } | null>(null)
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
@@ -45,7 +45,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    return window.api.onAutoApproveToast((toolName, toolInput, sessionId) => {
+    return window.api.onAutoApproveToast((toolName, toolInput, sessionId, cwd) => {
       let detail = ''
       if (toolName === 'Bash' && typeof toolInput.command === 'string') {
         detail = toolInput.command as string
@@ -56,7 +56,8 @@ function App() {
         detail = parts.length > 2 ? '.../' + parts.slice(-2).join('/') : fp
       }
       const text = detail ? `${toolName}: ${detail}` : toolName
-      setToast({ text, hue: sessionToHue(sessionId) })
+      const project = cwd ? (cwd.split('/').pop() || '') : ''
+      setToast({ text, project, color: getSessionColor(sessionId) })
       setTimeout(() => setToast(null), 2500)
     })
   }, [])
@@ -105,46 +106,53 @@ function App() {
           onDecide={handlePermissionDecide}
         />
       )}
-      {toast && (() => {
-        const bg = `hsl(${toast.hue}, 85%, 85%)`
-        const border = `hsl(${toast.hue}, 50%, 30%)`
-        return (
+      {toast && (
+        <div style={{
+          position: 'absolute',
+          bottom: '110px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        }}>
           <div style={{
-            position: 'absolute',
-            bottom: '110px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            pointerEvents: 'none'
+            background: toast.color.bg,
+            border: `2px solid ${toast.color.border}`,
+            borderRadius: '14px',
+            padding: '6px 12px',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: '#222',
+            fontFamily: '"SF Mono", "Fira Code", monospace',
+            boxShadow: `1px 2px 0px ${toast.color.border}`,
+            width: '88%',
+            maxWidth: '290px',
+            wordBreak: 'break-all',
+            textAlign: 'center',
+            lineHeight: '1.4'
           }}>
-            <div style={{
-              background: bg,
-              border: `2px solid ${border}`,
-              borderRadius: '14px',
-              padding: '6px 12px',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#222',
-              fontFamily: '"SF Mono", "Fira Code", monospace',
-              boxShadow: `1px 2px 0px ${border}`,
-              width: '88%',
-              maxWidth: '290px',
-              wordBreak: 'break-all',
-              textAlign: 'center',
-              lineHeight: '1.4'
-            }}>
-              {toast.text}
-            </div>
-            <div style={{
-              width: '8px', height: '6px', marginTop: '2px',
-              background: bg, border: `2px solid ${border}`,
-              borderRadius: '50%', boxShadow: `1px 1px 0px ${border}`
-            }} />
+            {toast.project && (
+              <div style={{
+                fontSize: '9px',
+                fontWeight: 800,
+                color: toast.color.border,
+                marginBottom: '2px',
+                letterSpacing: '0.03em'
+              }}>
+                {toast.project}
+              </div>
+            )}
+            {toast.text}
           </div>
-        )
-      })()}
+          <div style={{
+            width: '8px', height: '6px', marginTop: '2px',
+            background: toast.color.bg, border: `2px solid ${toast.color.border}`,
+            borderRadius: '50%', boxShadow: `1px 1px 0px ${toast.color.border}`
+          }} />
+        </div>
+      )}
     </div>
   )
 }
