@@ -118,7 +118,7 @@ sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
   // Auto-approve if enabled — show toast, no resize needed
   if (currentAutoApprove) {
     sessionManager.resolvePermission(info.requestId, 'approve')
-    petWindow.webContents.send('auto-approve-toast', info.toolName, info.toolInput)
+    petWindow.webContents.send('auto-approve-toast', info.toolName, info.toolInput, info.sessionId)
     return
   }
 

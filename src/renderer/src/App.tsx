@@ -7,6 +7,7 @@ import { PermissionDialog } from './components/PermissionDialog'
 import { useAnimationState } from './hooks/useAnimationState'
 import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
+import { sessionToHue } from './utils'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
   if (theme !== 'blocks' && theme in THEME_SPRITES) return theme
@@ -18,7 +19,7 @@ function App() {
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
   const [dialogStyle, setDialogStyle] = useState<DialogStyle>('panel')
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
-  const [toastText, setToastText] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ text: string; hue: number } | null>(null)
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
@@ -44,7 +45,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    return window.api.onAutoApproveToast((toolName, toolInput) => {
+    return window.api.onAutoApproveToast((toolName, toolInput, sessionId) => {
       let detail = ''
       if (toolName === 'Bash' && typeof toolInput.command === 'string') {
         detail = toolInput.command as string
@@ -54,8 +55,9 @@ function App() {
         const parts = fp.split('/')
         detail = parts.length > 2 ? '.../' + parts.slice(-2).join('/') : fp
       }
-      setToastText(detail ? `${toolName}: ${detail}` : toolName)
-      setTimeout(() => setToastText(null), 2500)
+      const text = detail ? `${toolName}: ${detail}` : toolName
+      setToast({ text, hue: sessionToHue(sessionId) })
+      setTimeout(() => setToast(null), 2500)
     })
   }, [])
 
@@ -103,42 +105,46 @@ function App() {
           onDecide={handlePermissionDecide}
         />
       )}
-      {toastText && (
-        <div style={{
-          position: 'absolute',
-          bottom: '110px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none'
-        }}>
+      {toast && (() => {
+        const bg = `hsl(${toast.hue}, 85%, 85%)`
+        const border = `hsl(${toast.hue}, 50%, 30%)`
+        return (
           <div style={{
-            background: '#fff',
-            border: '2px solid #222',
-            borderRadius: '14px',
-            padding: '6px 12px',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: '#222',
-            fontFamily: '"SF Mono", "Fira Code", monospace',
-            boxShadow: '1px 2px 0px #222',
-            width: '88%',
-            maxWidth: '290px',
-            wordBreak: 'break-all',
-            textAlign: 'center',
-            lineHeight: '1.4'
+            position: 'absolute',
+            bottom: '110px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            pointerEvents: 'none'
           }}>
-            {toastText}
+            <div style={{
+              background: bg,
+              border: `2px solid ${border}`,
+              borderRadius: '14px',
+              padding: '6px 12px',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: '#222',
+              fontFamily: '"SF Mono", "Fira Code", monospace',
+              boxShadow: `1px 2px 0px ${border}`,
+              width: '88%',
+              maxWidth: '290px',
+              wordBreak: 'break-all',
+              textAlign: 'center',
+              lineHeight: '1.4'
+            }}>
+              {toast.text}
+            </div>
+            <div style={{
+              width: '8px', height: '6px', marginTop: '2px',
+              background: bg, border: `2px solid ${border}`,
+              borderRadius: '50%', boxShadow: `1px 1px 0px ${border}`
+            }} />
           </div>
-          <div style={{
-            width: '8px', height: '6px', marginTop: '2px',
-            background: '#fff', border: '2px solid #222',
-            borderRadius: '50%', boxShadow: '1px 1px 0px #222'
-          }} />
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { PermissionRequestInfo, DialogStyle } from '../../../shared/types'
 
+import { sessionToHue } from '../utils'
+
 const TIMEOUT_MS = 115000
 
 function formatToolInput(toolName: string, toolInput: Record<string, unknown>): { dir: string; file: string } | null {
@@ -40,6 +42,7 @@ interface Props {
 function usePermissionState(info: PermissionRequestInfo, onDecide: (d: 'approve' | 'deny') => void) {
   const detail = formatToolInput(info.toolName, info.toolInput)
   const projectName = info.cwd ? (info.cwd.split('/').pop() || info.cwd) : ''
+  const hue = sessionToHue(info.sessionId)
 
   const elapsed = Date.now() - info.timestamp
   const initialRemaining = Math.max(0, TIMEOUT_MS - elapsed)
@@ -66,12 +69,12 @@ function usePermissionState(info: PermissionRequestInfo, onDecide: (d: 'approve'
     return () => window.removeEventListener('keydown', handleKey)
   }, [handleKey])
 
-  return { detail, projectName, progress }
+  return { detail, projectName, progress, hue }
 }
 
 /* ── Panel Style (original) ── */
 function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
-  const { detail, projectName, progress } = usePermissionState(info, onDecide)
+  const { detail, projectName, progress, hue } = usePermissionState(info, onDecide)
 
   return (
     <div
@@ -81,9 +84,9 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         display: 'flex',
         flexDirection: 'column',
         padding: '14px 16px',
-        background: '#16161e',
+        background: `hsl(${hue}, 25%, 13%)`,
         borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: `1px solid hsla(${hue}, 40%, 50%, 0.25)`,
         WebkitAppRegion: 'drag',
         userSelect: 'none',
         color: '#fff',
@@ -174,7 +177,9 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
 
 /* ── Bubble Style (comic speech bubble) ── */
 function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
-  const { detail, projectName, progress } = usePermissionState(info, onDecide)
+  const { detail, projectName, progress, hue } = usePermissionState(info, onDecide)
+  const bubbleBg = `hsl(${hue}, 85%, 85%)`
+  const bubbleBorder = `hsl(${hue}, 50%, 30%)`
 
   return (
     <div style={{
@@ -195,13 +200,13 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         width: '88%',
         maxWidth: '280px',
         maxHeight: '230px',
-        background: '#fff',
+        background: bubbleBg,
         borderRadius: '20px',
-        border: '2.5px solid #222',
+        border: `2.5px solid ${bubbleBorder}`,
         padding: '12px 14px 10px',
         color: '#222',
         fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", sans-serif',
-        boxShadow: '2px 3px 0px #222',
+        boxShadow: `2px 3px 0px ${bubbleBorder}`,
         overflow: 'hidden',
         WebkitAppRegion: 'drag',
         display: 'flex',
@@ -294,13 +299,13 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
       }}>
         <div style={{
           width: '14px', height: '10px',
-          background: '#fff', border: '2.5px solid #222',
-          borderRadius: '50%', boxShadow: '1px 1px 0px #222'
+          background: bubbleBg, border: `2.5px solid ${bubbleBorder}`,
+          borderRadius: '50%', boxShadow: `1px 1px 0px ${bubbleBorder}`
         }} />
         <div style={{
           width: '8px', height: '6px',
-          background: '#fff', border: '2px solid #222',
-          borderRadius: '50%', boxShadow: '1px 1px 0px #222'
+          background: bubbleBg, border: `2px solid ${bubbleBorder}`,
+          borderRadius: '50%', boxShadow: `1px 1px 0px ${bubbleBorder}`
         }} />
       </div>
     </div>
