@@ -38,31 +38,14 @@ export function createPetWindow(dialogStyle: DialogStyle): BrowserWindow {
     }
   })
 
-  win.setIgnoreMouseEvents(false)
+  // Default: let clicks pass through transparent areas.
+  // { forward: true } ensures mousemove events are still delivered so the
+  // renderer can detect when the cursor enters a visible region.
+  win.setIgnoreMouseEvents(true, { forward: true })
 
   // Use 'screen-saver' level so the pet floats above macOS fullscreen apps
   win.setAlwaysOnTop(true, 'screen-saver')
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-
-  // Detect window dragging via will-move events
-  let dragTimeout: ReturnType<typeof setTimeout> | null = null
-  let isDragging = false
-
-  win.on('will-move', () => {
-    if (!isDragging) {
-      isDragging = true
-      win.webContents.send('drag-change', true)
-    }
-    if (dragTimeout) clearTimeout(dragTimeout)
-    dragTimeout = setTimeout(() => {
-      isDragging = false
-      if (!win.isDestroyed()) win.webContents.send('drag-change', false)
-    }, 200)
-  })
-
-  win.on('closed', () => {
-    if (dragTimeout) clearTimeout(dragTimeout)
-  })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])

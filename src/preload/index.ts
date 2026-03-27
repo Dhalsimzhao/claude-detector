@@ -20,5 +20,14 @@ contextBridge.exposeInMainWorld('api', {
     onIpc('auto-approve-toast', cb),
   respondPermission: (requestId: string, decision: PermissionDecision): void => {
     ipcRenderer.send('permission-response', requestId, decision)
+  },
+  setClickThrough: (ignore: boolean): void => {
+    ipcRenderer.send('set-click-through', ignore)
+  },
+  dragMove: (dx: number, dy: number): void => {
+    ipcRenderer.send('window-drag-move', dx, dy)
+  },
+  updateHitRegions: (regions: Array<{ x: number; y: number; width: number; height: number }>): void => {
+    ipcRenderer.send('update-hit-regions', regions)
   }
 })

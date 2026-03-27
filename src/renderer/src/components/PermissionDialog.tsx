@@ -22,11 +22,11 @@ function formatToolInput(toolName: string, toolInput: Record<string, unknown>): 
       return null
     }
   }
-  const lastSlash = raw.lastIndexOf('/')
+  const lastSlash = Math.max(raw.lastIndexOf('/'), raw.lastIndexOf('\\'))
   if (lastSlash === -1) return { dir: '', file: raw }
   const dirPart = raw.slice(0, lastSlash + 1)
   const filePart = raw.slice(lastSlash + 1)
-  const segments = dirPart.replace(/\/$/, '').split('/')
+  const segments = dirPart.replace(/[\\/]$/, '').split(/[\\/]/)
   const shortDir = segments.length > 2
     ? '.../' + segments.slice(-2).join('/') + '/'
     : dirPart
@@ -41,7 +41,7 @@ interface Props {
 
 function usePermissionState(info: PermissionRequestInfo, onDecide: (d: 'approve' | 'deny') => void) {
   const detail = formatToolInput(info.toolName, info.toolInput)
-  const projectName = info.cwd ? (info.cwd.split('/').pop() || info.cwd) : ''
+  const projectName = info.cwd ? (info.cwd.split(/[\\/]/).pop() || info.cwd) : ''
   const sessionColor = getSessionColor(info.sessionId)
 
   const elapsed = Date.now() - info.timestamp
@@ -78,6 +78,7 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
 
   return (
     <div
+      data-hit-region
       style={{
         position: 'absolute',
         inset: 0,
@@ -87,7 +88,6 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         background: '#16161e',
         borderRadius: '12px',
         border: `2px solid ${sessionColor.border}`,
-        WebkitAppRegion: 'drag',
         userSelect: 'none',
         color: '#fff',
         fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", sans-serif',
@@ -134,7 +134,7 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
           maxHeight: '80px', overflow: 'auto',
           fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
           letterSpacing: '-0.01em', flex: '0 1 auto',
-          WebkitAppRegion: 'no-drag', cursor: 'default'
+          cursor: 'default'
         } as React.CSSProperties}>
           {detail.dir && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{detail.dir}</span>}
           <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{detail.file}</span>
@@ -150,7 +150,7 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
           style={{
             flex: 1, padding: '8px 0', borderRadius: '8px', border: 'none',
             background: '#4ade80', color: '#0a0a0a', fontWeight: 600, fontSize: '12px',
-            cursor: 'pointer', WebkitAppRegion: 'no-drag', transition: 'opacity 0.15s'
+            cursor: 'pointer', transition: 'opacity 0.15s'
           } as React.CSSProperties}
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -163,7 +163,7 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
             flex: 1, padding: '8px 0', borderRadius: '8px',
             border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)',
             color: 'rgba(255,255,255,0.75)', fontWeight: 600, fontSize: '12px',
-            cursor: 'pointer', WebkitAppRegion: 'no-drag', transition: 'opacity 0.15s'
+            cursor: 'pointer', transition: 'opacity 0.15s'
           } as React.CSSProperties}
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -180,14 +180,13 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
   const { detail, projectName, progress, sessionColor } = usePermissionState(info, onDecide)
 
   return (
-    <div style={{
+    <div data-hit-region style={{
       position: 'absolute',
       inset: 0,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'flex-start',
       alignItems: 'center',
-      WebkitAppRegion: 'drag',
       cursor: 'grab',
       userSelect: 'none',
       paddingTop: '6px'
@@ -206,7 +205,6 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         fontFamily: '-apple-system, "SF Pro Text", "Segoe UI", sans-serif',
         boxShadow: `2px 3px 0px ${sessionColor.border}`,
         overflow: 'hidden',
-        WebkitAppRegion: 'drag',
         display: 'flex',
         flexDirection: 'column'
       } as React.CSSProperties}>
@@ -248,7 +246,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
               padding: '5px 8px', wordBreak: 'break-all', maxHeight: '55px', overflow: 'auto',
               fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
               marginBottom: '10px', flex: '0 1 auto',
-              WebkitAppRegion: 'no-drag', cursor: 'default'
+              cursor: 'default'
             } as React.CSSProperties}
           >
             {detail.dir && <span style={{ color: '#999' }}>{detail.dir}</span>}
@@ -264,7 +262,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
               flex: 1, padding: '6px 0', borderRadius: '10px',
               border: '2px solid #16a34a', background: '#22c55e', color: '#fff',
               fontWeight: 700, fontSize: '12px',
-              cursor: 'pointer', WebkitAppRegion: 'no-drag', transition: 'transform 0.1s'
+              cursor: 'pointer', transition: 'transform 0.1s'
             } as React.CSSProperties}
             onMouseEnter={e => (e.currentTarget.style.transform = 'scale(0.96)')}
             onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -277,7 +275,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
               flex: 1, padding: '6px 0', borderRadius: '10px',
               border: '2px solid #d4d4d4', background: '#f5f5f5', color: '#555',
               fontWeight: 700, fontSize: '12px',
-              cursor: 'pointer', WebkitAppRegion: 'no-drag', transition: 'transform 0.1s'
+              cursor: 'pointer', transition: 'transform 0.1s'
             } as React.CSSProperties}
             onMouseEnter={e => (e.currentTarget.style.transform = 'scale(0.96)')}
             onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}

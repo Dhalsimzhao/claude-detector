@@ -6,6 +6,8 @@ import { SessionPanel } from './components/SessionPanel'
 import { PermissionDialog } from './components/PermissionDialog'
 import { Toast, ToastData } from './components/Toast'
 import { useAnimationState } from './hooks/useAnimationState'
+import { useClickThrough } from './hooks/useClickThrough'
+import { usePetDrag } from './hooks/usePetDrag'
 import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
 import { getSessionColor } from './utils'
@@ -25,6 +27,9 @@ function App() {
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
+  const petContainerRef = useRef<HTMLDivElement>(null)
+  const isDragging = usePetDrag(petContainerRef)
+  useClickThrough(isDragging)
 
   useEffect(() => {
     return window.api.onThemeChange(setTheme)
@@ -54,11 +59,11 @@ function App() {
       } else if (typeof toolInput.file_path === 'string') {
         const fp = toolInput.file_path as string
         // Keep last 2 path segments for readability
-        const parts = fp.split('/')
+        const parts = fp.split(/[\\/]/)
         detail = parts.length > 2 ? '.../' + parts.slice(-2).join('/') : fp
       }
       const text = detail ? `${toolName}: ${detail}` : toolName
-      const project = cwd ? (cwd.split('/').pop() || '') : ''
+      const project = cwd ? (cwd.split(/[\\/]/).pop() || '') : ''
       if (toastTimer.current) clearTimeout(toastTimer.current)
       setToast({ text, project, color: getSessionColor(sessionId) })
       toastTimer.current = setTimeout(() => setToast(null), 2500)
@@ -81,15 +86,13 @@ function App() {
         alignItems: 'center',
         justifyContent: 'flex-end',
         position: 'relative',
-        WebkitAppRegion: 'drag',
-        cursor: 'grab',
         userSelect: 'none',
-        // Near-invisible background so Windows captures mouse events
-        // on transparent pixels instead of passing them through
+        // Windows needs a near-invisible background to capture mouse events
+        // for drag during setIgnoreMouseEvents(false); macOS works with transparent
         background: window.api.platform === 'win32' ? 'rgba(0,0,0,0.005)' : 'transparent'
       } as React.CSSProperties}
     >
-      <div style={{ position: 'relative' }}>
+      <div ref={petContainerRef} data-hit-region style={{ position: 'relative', cursor: 'grab' }}>
         {theme === 'blocks'
           ? <PetCanvas state={spriteState} frameIndex={frameIndex} />
           : <PetSprite theme={spriteTheme} state={spriteState} frameIndex={frameIndex} />

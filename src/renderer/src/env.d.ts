@@ -14,6 +14,9 @@ declare global {
       onPermissionRequest: (callback: (info: PermissionRequestInfo) => void) => () => void
       onAutoApproveToast: (callback: (toolName: string, toolInput: Record<string, unknown>) => void) => () => void
       respondPermission: (requestId: string, decision: PermissionDecision) => void
+      setClickThrough: (ignore: boolean) => void
+      dragMove: (dx: number, dy: number) => void
+      updateHitRegions: (regions: Array<{ x: number; y: number; width: number; height: number }>) => void
     }
   }
 }

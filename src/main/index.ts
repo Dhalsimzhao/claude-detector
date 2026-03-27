@@ -133,6 +133,81 @@ sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
   }
 })
 
+// Click-through toggle from renderer (used on macOS; Windows uses cursor polling)
+ipcMain.on('set-click-through', (_event, ignore: boolean) => {
+  if (!petWindow || petWindow.isDestroyed()) return
+  if (ignore) {
+    petWindow.setIgnoreMouseEvents(true, { forward: true })
+  } else {
+    petWindow.setIgnoreMouseEvents(false)
+  }
+})
+
+// Windows cursor-polling fallback for click-through.
+// On Windows, { forward: true } may not reliably deliver mousemove to the
+// renderer, so the main process polls the cursor position and compares it
+// against known hit-region rects reported by the renderer.
+type HitRect = { x: number; y: number; width: number; height: number }
+let hitRegions: HitRect[] = []
+let winCursorInside = false
+let cursorPollTimer: ReturnType<typeof setInterval> | null = null
+
+ipcMain.on('update-hit-regions', (_event, regions: HitRect[]) => {
+  hitRegions = regions
+})
+
+function startCursorPolling(): void {
+  if (process.platform !== 'win32' || cursorPollTimer) return
+  cursorPollTimer = setInterval(() => {
+    if (!petWindow || petWindow.isDestroyed()) return
+    const cursor = screen.getCursorScreenPoint()
+    const [wx, wy] = petWindow.getPosition()
+    // Convert screen coords to window-relative coords
+    const rx = cursor.x - wx
+    const ry = cursor.y - wy
+    const inside = hitRegions.some(
+      (r) => rx >= r.x && rx <= r.x + r.width && ry >= r.y && ry <= r.y + r.height
+    )
+    if (inside && !winCursorInside) {
+      winCursorInside = true
+      petWindow.setIgnoreMouseEvents(false)
+    } else if (!inside && winCursorInside) {
+      winCursorInside = false
+      petWindow.setIgnoreMouseEvents(true, { forward: true })
+    }
+  }, 16) // ~60fps
+}
+
+function stopCursorPolling(): void {
+  if (cursorPollTimer) {
+    clearInterval(cursorPollTimer)
+    cursorPollTimer = null
+  }
+}
+
+// Custom window drag from renderer (replaces native WebkitAppRegion drag)
+let dragTimeout: ReturnType<typeof setTimeout> | null = null
+let isDragging = false
+
+ipcMain.on('window-drag-move', (_event, dx: number, dy: number) => {
+  if (!petWindow || petWindow.isDestroyed()) return
+  const [x, y] = petWindow.getPosition()
+  petWindow.setPosition(x + dx, y + dy)
+
+  // Send drag state to renderer for animation
+  if (!isDragging) {
+    isDragging = true
+    petWindow.webContents.send('drag-change', true)
+  }
+  if (dragTimeout) clearTimeout(dragTimeout)
+  dragTimeout = setTimeout(() => {
+    isDragging = false
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('drag-change', false)
+    }
+  }, 200)
+})
+
 // Listen for user's permission decision from renderer
 ipcMain.on('permission-response', (_event, requestId: string, decision: PermissionDecision) => {
   sessionManager.resolvePermission(requestId, decision)
@@ -217,6 +292,7 @@ app.whenReady().then(async () => {
     petWindow?.webContents.send('dialog-style-change', currentDialogStyle)
   })
 
+  startCursorPolling()
   createTray(buildContextMenu())
 
   // system-context-menu only works on Windows; use webContents context-menu for cross-platform
@@ -229,6 +305,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
+  stopCursorPolling()
   sessionManager.destroy()
   hookServer.stop()
 })

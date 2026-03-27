@@ -31,7 +31,7 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
   }, [])
 
   return (
-    <div style={{
+    <div data-hit-region style={{
       position: 'absolute',
       top: 6,
       left: 6,
@@ -44,7 +44,6 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      WebkitAppRegion: 'no-drag'
     } as React.CSSProperties}>
       {/* Header */}
       <div style={{
