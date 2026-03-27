@@ -32,6 +32,8 @@ export function Toast({ data }: { data: ToastData }) {
         boxShadow: `1px 2px 0px ${border}`,
         width: '88%',
         maxWidth: '290px',
+        maxHeight: '120px',
+        overflow: 'hidden',
         wordBreak: 'break-all',
         textAlign: 'center',
         lineHeight: '1.4'

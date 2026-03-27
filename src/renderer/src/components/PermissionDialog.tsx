@@ -134,7 +134,7 @@ function PanelDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
           maxHeight: '80px', overflow: 'auto',
           fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
           letterSpacing: '-0.01em', flex: '0 1 auto',
-          cursor: 'default'
+          minHeight: 0, cursor: 'default'
         } as React.CSSProperties}>
           {detail.dir && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{detail.dir}</span>}
           <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{detail.file}</span>
@@ -196,7 +196,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         position: 'relative',
         width: '88%',
         maxWidth: '280px',
-        maxHeight: '230px',
+        maxHeight: '200px',
         background: sessionColor.bg,
         borderRadius: '20px',
         border: `2.5px solid ${sessionColor.border}`,
@@ -206,7 +206,8 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
         boxShadow: `2px 3px 0px ${sessionColor.border}`,
         overflow: 'hidden',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        minHeight: 0
       } as React.CSSProperties}>
         {/* Progress bar */}
         <div style={{
@@ -246,7 +247,7 @@ function BubbleDialog({ info, onDecide }: Omit<Props, 'dialogStyle'>) {
               padding: '5px 8px', wordBreak: 'break-all', maxHeight: '55px', overflow: 'auto',
               fontFamily: '"SF Mono", "Fira Code", "Cascadia Code", monospace',
               marginBottom: '10px', flex: '0 1 auto',
-              cursor: 'default'
+              minHeight: 0, cursor: 'default'
             } as React.CSSProperties}
           >
             {detail.dir && <span style={{ color: '#999' }}>{detail.dir}</span>}
