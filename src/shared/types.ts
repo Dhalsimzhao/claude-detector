@@ -50,6 +50,7 @@ export interface SessionUpdate {
 export interface PermissionRequestInfo {
   requestId: string
   sessionId: string
+  cwd: string
   toolName: string
   toolInput: Record<string, unknown>
   timestamp: number

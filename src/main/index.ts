@@ -49,13 +49,24 @@ sessionManager.setOnChange((update) => {
   petWindow?.webContents.send('session-update', update)
 })
 
+// Clamp position to the display where the pet currently sits
+function clampToDisplay(anchorX: number, anchorY: number, x: number, y: number, w: number, h: number): [number, number] {
+  // Use the pet's current center (anchor) to determine which display it belongs to
+  const display = screen.getDisplayNearestPoint({ x: anchorX, y: anchorY })
+  const { x: sx, y: sy, width: sw, height: sh } = display.workArea
+  return [
+    Math.max(sx, Math.min(x, sx + sw - w)),
+    Math.max(sy, Math.min(y, sy + sh - h))
+  ]
+}
+
 // When a permission request arrives: notify renderer + expand window
 sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
   if (!petWindow) return
   const [wx, wy] = petWindow.getPosition()
-  // Anchor to bottom-right corner
-  const newX = wx - (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
-  const newY = wy - (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+  const rawX = wx - (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
+  const rawY = wy - (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DIALOG_WIN_WIDTH, DIALOG_WIN_HEIGHT)
   petWindow.setSize(DIALOG_WIN_WIDTH, DIALOG_WIN_HEIGHT)
   petWindow.setPosition(newX, newY)
   petWindow.webContents.send('permission-request', info)
@@ -64,11 +75,11 @@ sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
 // Listen for user's permission decision from renderer
 ipcMain.on('permission-response', (_event, requestId: string, decision: PermissionDecision) => {
   sessionManager.resolvePermission(requestId, decision)
-  // Restore window to default size, anchoring bottom-right
   if (petWindow) {
     const [wx, wy] = petWindow.getPosition()
-    const newX = wx + (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
-    const newY = wy + (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+    const rawX = wx + (DIALOG_WIN_WIDTH - DEFAULT_WIN_WIDTH)
+    const rawY = wy + (DIALOG_WIN_HEIGHT - DEFAULT_WIN_HEIGHT)
+    const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
     petWindow.setSize(DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
     petWindow.setPosition(newX, newY)
   }
@@ -138,11 +149,12 @@ app.whenReady().then(async () => {
     }
   )
 
+  // system-context-menu only works on Windows; use webContents context-menu for cross-platform
   petWindow.on('system-context-menu', (event) => {
     event.preventDefault()
-    const [wx, wy] = petWindow!.getPosition()
-    const cursor = screen.getCursorScreenPoint()
-    buildContextMenu().popup({ window: petWindow ?? undefined, x: cursor.x - wx, y: cursor.y - wy })
+  })
+  petWindow.webContents.on('context-menu', (_event, params) => {
+    buildContextMenu().popup({ window: petWindow ?? undefined, x: params.x, y: params.y })
   })
 })
 

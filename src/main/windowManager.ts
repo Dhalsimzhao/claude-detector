@@ -29,6 +29,10 @@ export function createPetWindow(): BrowserWindow {
 
   win.setIgnoreMouseEvents(false)
 
+  // Use 'screen-saver' level so the pet floats above macOS fullscreen apps
+  win.setAlwaysOnTop(true, 'screen-saver')
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+
   // Detect window dragging via will-move events
   let dragTimeout: ReturnType<typeof setTimeout> | null = null
   let isDragging = false

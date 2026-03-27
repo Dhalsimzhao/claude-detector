@@ -39,6 +39,7 @@ process.stdin.on('end', () => {
     const postData = JSON.stringify({
       requestId,
       sessionId: payload.session_id,
+      cwd: payload.cwd || '',
       toolName: payload.tool_name || '',
       toolInput: payload.tool_input || {},
       timestamp: Date.now()
