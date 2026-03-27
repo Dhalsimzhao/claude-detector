@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { SessionState } from '../../../shared/types'
-import { STATE_COLORS, STATE_LABELSS } from '../utils'
+import { STATE_COLORS, STATE_LABELS } from '../utils'
 
 interface SessionPanelProps {
   sessions: SessionState[]
