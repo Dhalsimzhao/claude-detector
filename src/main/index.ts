@@ -13,6 +13,7 @@ const CONFIG_DIR = join(homedir(), '.claude-detector')
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json')
 
 const VALID_THEMES: PetTheme[] = ['blocks', 'psyduck', 'sherma', 'flea']
+const THEME_LABELS: Record<PetTheme, string> = { blocks: 'Blocks', psyduck: 'Psyduck', sherma: 'Sherma', flea: 'Flea' }
 const VALID_DIALOG_STYLES: DialogStyle[] = ['panel', 'bubble']
 
 // Default window dimensions
@@ -153,8 +154,8 @@ function buildContextMenu(): Menu {
   return Menu.buildFromTemplate([
     {
       label: 'Theme',
-      submenu: (['blocks', 'psyduck', 'sherma', 'flea'] as PetTheme[]).map((t) => ({
-        label: { blocks: 'Blocks', psyduck: 'Psyduck', sherma: 'Sherma', flea: 'Flea' }[t],
+      submenu: VALID_THEMES.map((t) => ({
+        label: THEME_LABELS[t],
         type: 'radio' as const,
         checked: currentTheme === t,
         click: () => {
@@ -216,18 +217,7 @@ app.whenReady().then(async () => {
     petWindow?.webContents.send('dialog-style-change', currentDialogStyle)
   })
 
-  createTray(
-    () => {
-      hookServer.stop()
-      app.quit()
-    },
-    currentTheme,
-    (theme: PetTheme) => {
-      currentTheme = theme
-      writeConfig({ theme })
-      petWindow?.webContents.send('theme-change', theme)
-    }
-  )
+  createTray(buildContextMenu())
 
   // system-context-menu only works on Windows; use webContents context-menu for cross-platform
   petWindow.on('system-context-menu', (event) => {
@@ -239,6 +229,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
+  sessionManager.destroy()
   hookServer.stop()
 })
 

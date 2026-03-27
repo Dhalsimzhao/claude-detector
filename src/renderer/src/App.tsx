@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PetCanvas } from './components/PetCanvas'
 import { PetSprite } from './components/PetSprite'
 import { SessionBadge } from './components/SessionBadge'
 import { SessionPanel } from './components/SessionPanel'
 import { PermissionDialog } from './components/PermissionDialog'
+import { Toast, ToastData } from './components/Toast'
 import { useAnimationState } from './hooks/useAnimationState'
 import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
-import { getSessionColor, SessionColor } from './utils'
+import { getSessionColor } from './utils'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
   if (theme !== 'blocks' && theme in THEME_SPRITES) return theme
@@ -19,7 +20,8 @@ function App() {
   const [detailSessions, setDetailSessions] = useState<SessionState[] | null>(null)
   const [dialogStyle, setDialogStyle] = useState<DialogStyle>('panel')
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
-  const [toast, setToast] = useState<{ text: string; project: string; color: SessionColor } | null>(null)
+  const [toast, setToast] = useState<ToastData | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
   const spriteTheme = toSpriteTheme(theme)
   const { spriteState, frameIndex, sessions } = useAnimationState(spriteTheme)
@@ -57,8 +59,9 @@ function App() {
       }
       const text = detail ? `${toolName}: ${detail}` : toolName
       const project = cwd ? (cwd.split('/').pop() || '') : ''
+      if (toastTimer.current) clearTimeout(toastTimer.current)
       setToast({ text, project, color: getSessionColor(sessionId) })
-      setTimeout(() => setToast(null), 2500)
+      toastTimer.current = setTimeout(() => setToast(null), 2500)
     })
   }, [])
 
@@ -106,53 +109,7 @@ function App() {
           onDecide={handlePermissionDecide}
         />
       )}
-      {toast && (
-        <div style={{
-          position: 'absolute',
-          bottom: '110px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            background: toast.color.bg,
-            border: `2px solid ${toast.color.border}`,
-            borderRadius: '14px',
-            padding: '6px 12px',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: '#222',
-            fontFamily: '"SF Mono", "Fira Code", monospace',
-            boxShadow: `1px 2px 0px ${toast.color.border}`,
-            width: '88%',
-            maxWidth: '290px',
-            wordBreak: 'break-all',
-            textAlign: 'center',
-            lineHeight: '1.4'
-          }}>
-            {toast.project && (
-              <div style={{
-                fontSize: '9px',
-                fontWeight: 800,
-                color: toast.color.border,
-                marginBottom: '2px',
-                letterSpacing: '0.03em'
-              }}>
-                {toast.project}
-              </div>
-            )}
-            {toast.text}
-          </div>
-          <div style={{
-            width: '8px', height: '6px', marginTop: '2px',
-            background: toast.color.bg, border: `2px solid ${toast.color.border}`,
-            borderRadius: '50%', boxShadow: `1px 1px 0px ${toast.color.border}`
-          }} />
-        </div>
-      )}
+      {toast && <Toast data={toast} />}
     </div>
   )
 }

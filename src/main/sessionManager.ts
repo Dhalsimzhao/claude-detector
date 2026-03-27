@@ -152,6 +152,19 @@ export class SessionManager {
     }
   }
 
+  destroy(): void {
+    for (const timer of this.cleanupTimers.values()) clearTimeout(timer)
+    for (const timer of this.taskCompletedTimers.values()) clearTimeout(timer)
+    for (const pending of this.pendingPermissions.values()) {
+      clearTimeout(pending.timer)
+      pending.reject(new Error('app shutting down'))
+    }
+    this.cleanupTimers.clear()
+    this.taskCompletedTimers.clear()
+    this.pendingPermissions.clear()
+    this.sessions.clear()
+  }
+
   private clearTimer(timers: Map<string, ReturnType<typeof setTimeout>>, id: string): void {
     const timer = timers.get(id)
     if (timer) {

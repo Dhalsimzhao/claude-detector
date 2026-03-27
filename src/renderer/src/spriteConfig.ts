@@ -79,7 +79,7 @@ export const THEME_SPRITES: Record<SpriteTheme, Record<SpriteState, SpriteSheetC
   },
   sherma: {
     idle: {
-      src: shermaDragging,
+      src: shermaIdle,
       frameWidth: 164,
       frameHeight: 139,
       frameCount: 1,
@@ -107,7 +107,7 @@ export const THEME_SPRITES: Record<SpriteTheme, Record<SpriteState, SpriteSheetC
       durations: [60]
     },
     dragging: {
-      src: shermaIdle,
+      src: shermaDragging,
       frameWidth: 158,
       frameHeight: 157,
       frameCount: 1,

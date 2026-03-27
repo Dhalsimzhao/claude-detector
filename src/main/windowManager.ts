@@ -56,8 +56,12 @@ export function createPetWindow(dialogStyle: DialogStyle): BrowserWindow {
     if (dragTimeout) clearTimeout(dragTimeout)
     dragTimeout = setTimeout(() => {
       isDragging = false
-      win.webContents.send('drag-change', false)
+      if (!win.isDestroyed()) win.webContents.send('drag-change', false)
     }, 200)
+  })
+
+  win.on('closed', () => {
+    if (dragTimeout) clearTimeout(dragTimeout)
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

@@ -11,6 +11,7 @@ interface PetSpriteProps {
 
 export function PetSprite({ theme, state, frameIndex }: PetSpriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const [images, setImages] = useState<Record<string, HTMLImageElement>>({})
   const timeRef = useRef(0)
   const rafRef = useRef<number>(0)
@@ -41,7 +42,8 @@ export function PetSprite({ theme, state, frameIndex }: PetSpriteProps) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    if (!ctxRef.current) ctxRef.current = canvas.getContext('2d')
+    const ctx = ctxRef.current
     if (!ctx) return
 
     const config = THEME_SPRITES[theme][state]

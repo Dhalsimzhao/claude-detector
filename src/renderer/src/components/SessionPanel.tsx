@@ -1,23 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
-import { SessionState, PetState } from '../../../shared/types'
+import { SessionState } from '../../../shared/types'
+import { STATE_COLORS, STATE_LABELSS } from '../utils'
 
 interface SessionPanelProps {
   sessions: SessionState[]
   onClose: () => void
-}
-
-const STATE_DOT: Record<PetState, string> = {
-  idle: '#999',
-  running: '#34a853',
-  permissionRequest: '#ea8600',
-  taskCompleted: '#7c4dff'
-}
-
-const STATE_LABEL: Record<PetState, string> = {
-  idle: 'Idle',
-  running: 'Running',
-  permissionRequest: 'Waiting',
-  taskCompleted: 'Completed'
 }
 
 function timeSince(ts: number): string {
@@ -132,17 +119,17 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
                     gap: 4,
                     fontSize: 11,
                     fontFamily: '-apple-system, "Segoe UI", sans-serif',
-                    color: STATE_DOT[s.petState]
+                    color: STATE_COLORS[s.petState]
                   }}>
                     <span style={{
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: STATE_DOT[s.petState],
+                      background: STATE_COLORS[s.petState],
                       display: 'inline-block',
                       flexShrink: 0
                     }} />
-                    {STATE_LABEL[s.petState]}
+                    {STATE_LABELS[s.petState]}
                   </span>
                 </div>
                 {/* Path */}

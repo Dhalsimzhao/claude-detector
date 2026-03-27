@@ -1,17 +1,10 @@
 import { useRef, useEffect } from 'react'
 import { SpriteState } from '../spriteConfig'
+import { STATE_COLORS } from '../utils'
 
 interface PetCanvasProps {
   state: SpriteState
   frameIndex: number
-}
-
-const STATE_COLORS: Record<SpriteState, string> = {
-  idle: '#4a9eff',
-  running: '#00cc66',
-  permissionRequest: '#ffa500',
-  taskCompleted: '#9b59b6',
-  dragging: '#e74c3c'
 }
 
 const SIZE = 128

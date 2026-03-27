@@ -1,3 +1,22 @@
+import { PetState } from '../../shared/types'
+import { SpriteState } from './spriteConfig'
+
+// State display colors and labels (shared between PetCanvas, SessionPanel, etc.)
+export const STATE_COLORS: Record<SpriteState, string> = {
+  idle: '#4a9eff',
+  running: '#00cc66',
+  permissionRequest: '#ffa500',
+  taskCompleted: '#9b59b6',
+  dragging: '#e74c3c'
+}
+
+export const STATE_LABELS: Record<PetState, string> = {
+  idle: 'Idle',
+  running: 'Running',
+  permissionRequest: 'Waiting',
+  taskCompleted: 'Completed'
+}
+
 export interface SessionColor {
   bg: string
   border: string
