@@ -73,43 +73,24 @@ function clampToDisplay(anchorX: number, anchorY: number, x: number, y: number, 
   ]
 }
 
-// Get current window base height (depends on dialog style)
-function getBaseHeight(): number {
-  return currentDialogStyle === 'bubble' ? BUBBLE_WIN_HEIGHT : DEFAULT_WIN_HEIGHT
-}
-
-// Expand window for panel mode (bubble mode is pre-sized, no resize needed)
-function expandWindowForPanel(dw: number, dh: number): void {
+// Expand window for dialog (grows upward from pet, clamped to screen)
+function expandWindowForDialog(dw: number, dh: number): void {
   if (!petWindow) return
   const [wx, wy] = petWindow.getPosition()
   const rawX = wx - Math.floor((dw - DEFAULT_WIN_WIDTH) / 2)
-  const rawY = wy - (dh - getBaseHeight())
+  const rawY = wy - (dh - DEFAULT_WIN_HEIGHT)
   const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, dw, dh)
   petWindow.setBounds({ x: newX, y: newY, width: dw, height: dh })
 }
 
-function restoreWindowForPanel(): void {
+function restoreWindowFromDialog(): void {
   if (!petWindow) return
   const [wx, wy] = petWindow.getPosition()
   const [cw, ch] = petWindow.getSize()
-  const baseH = getBaseHeight()
   const rawX = wx + Math.floor((cw - DEFAULT_WIN_WIDTH) / 2)
-  const rawY = wy + (ch - baseH)
-  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DEFAULT_WIN_WIDTH, baseH)
-  petWindow.setBounds({ x: newX, y: newY, width: DEFAULT_WIN_WIDTH, height: baseH })
-}
-
-// Resize window when switching between dialog styles
-function resizeForDialogStyle(style: DialogStyle): void {
-  if (!petWindow) return
-  const [wx, wy] = petWindow.getPosition()
-  const [cw, ch] = petWindow.getSize()
-  const newW = style === 'bubble' ? BUBBLE_WIN_WIDTH : DEFAULT_WIN_WIDTH
-  const newH = style === 'bubble' ? BUBBLE_WIN_HEIGHT : DEFAULT_WIN_HEIGHT
-  const rawX = wx + Math.floor((cw - newW) / 2)
-  const rawY = wy + (ch - newH)
-  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, newW, newH)
-  petWindow.setBounds({ x: newX, y: newY, width: newW, height: newH })
+  const rawY = wy + (ch - DEFAULT_WIN_HEIGHT)
+  const [newX, newY] = clampToDisplay(wx, wy, rawX, rawY, DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT)
+  petWindow.setBounds({ x: newX, y: newY, width: DEFAULT_WIN_WIDTH, height: DEFAULT_WIN_HEIGHT })
 }
 
 // When a permission request arrives
@@ -123,14 +104,13 @@ sessionManager.setOnPermissionRequest((info: PermissionRequestInfo) => {
     return
   }
 
+  // Expand window to fit dialog, then show
   if (currentDialogStyle === 'bubble') {
-    // Bubble mode: window is pre-sized, just show the dialog
-    petWindow.webContents.send('permission-request', info)
+    expandWindowForDialog(BUBBLE_WIN_WIDTH, BUBBLE_WIN_HEIGHT)
   } else {
-    // Panel mode: resize then show
-    expandWindowForPanel(DIALOG_PANEL_WIDTH, DIALOG_PANEL_HEIGHT)
-    petWindow.webContents.send('permission-request', info)
+    expandWindowForDialog(DIALOG_PANEL_WIDTH, DIALOG_PANEL_HEIGHT)
   }
+  petWindow.webContents.send('permission-request', info)
 })
 
 // Click-through toggle from renderer (used on macOS; Windows uses cursor polling)
@@ -211,10 +191,7 @@ ipcMain.on('window-drag-move', (_event, dx: number, dy: number) => {
 // Listen for user's permission decision from renderer
 ipcMain.on('permission-response', (_event, requestId: string, decision: PermissionDecision) => {
   sessionManager.resolvePermission(requestId, decision)
-  if (currentDialogStyle === 'panel') {
-    restoreWindowForPanel()
-  }
-  // Bubble mode: no resize needed
+  restoreWindowFromDialog()
 })
 
 const hookServer = new HookServer(
@@ -249,7 +226,6 @@ function buildContextMenu(): Menu {
         click: () => {
           currentDialogStyle = s
           writeConfig({ dialogStyle: s })
-          resizeForDialogStyle(s)
           petWindow?.webContents.send('dialog-style-change', s)
         }
       }))
@@ -285,7 +261,7 @@ app.whenReady().then(async () => {
   installHooks()
   await hookServer.start()
 
-  petWindow = createPetWindow(currentDialogStyle)
+  petWindow = createPetWindow()
 
   petWindow.webContents.on('did-finish-load', () => {
     petWindow?.webContents.send('theme-change', currentTheme)
@@ -323,7 +299,7 @@ app.on('window-all-closed', () => {
 // macOS: re-create window when dock icon is clicked
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    petWindow = createPetWindow(currentDialogStyle)
+    petWindow = createPetWindow()
     petWindow.webContents.on('did-finish-load', () => {
       petWindow?.webContents.send('theme-change', currentTheme)
     })

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { SessionState } from '../../../shared/types'
 import { STATE_COLORS, STATE_LABELS } from '../utils'
+import { usePetDrag } from '../hooks/usePetDrag'
 
 interface SessionPanelProps {
   sessions: SessionState[]
@@ -19,6 +20,8 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
   const [, setTick] = useState(0)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const headerRef = useRef<HTMLDivElement>(null)
+  usePetDrag(headerRef)
 
   useEffect(() => {
     const timer = setTimeout(() => onCloseRef.current(), 10000)
@@ -45,15 +48,16 @@ export function SessionPanel({ sessions, onClose }: SessionPanelProps) {
       flexDirection: 'column',
       overflow: 'hidden',
     } as React.CSSProperties}>
-      {/* Header */}
-      <div style={{
+      {/* Header — drag handle */}
+      <div ref={headerRef} style={{
         padding: '7px 10px',
         borderBottom: '1px solid #ddd',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         background: '#fff',
-        flexShrink: 0
+        flexShrink: 0,
+        cursor: 'grab'
       }}>
         <span style={{
           fontSize: 12,
