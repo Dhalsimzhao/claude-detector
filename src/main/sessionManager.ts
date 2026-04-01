@@ -11,17 +11,22 @@ interface PendingPermission {
 }
 
 const PERMISSION_TIMEOUT_MS = 115000
+// Sessions with no events for this long are considered stale and removed
+const STALE_SESSION_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
+const STALE_CHECK_INTERVAL_MS = 60 * 1000 // check every minute
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private taskCompletedTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private pendingPermissions = new Map<string, PendingPermission>()
+  private staleCheckTimer: ReturnType<typeof setInterval> | null = null
   private onChange: OnChangeCallback | null = null
   private onPermissionRequestNotify: OnPermissionRequestCallback | null = null
 
   setOnChange(callback: OnChangeCallback): void {
     this.onChange = callback
+    this.startStaleCleanup()
   }
 
   setOnPermissionRequest(callback: OnPermissionRequestCallback): void {
@@ -152,7 +157,36 @@ export class SessionManager {
     }
   }
 
+  private startStaleCleanup(): void {
+    if (this.staleCheckTimer) return
+    this.staleCheckTimer = setInterval(() => this.cleanupStaleSessions(), STALE_CHECK_INTERVAL_MS)
+  }
+
+  private cleanupStaleSessions(): void {
+    const now = Date.now()
+    let changed = false
+
+    for (const [sessionId, session] of this.sessions) {
+      if (now - session.updatedAt > STALE_SESSION_TIMEOUT_MS) {
+        console.log(`[session-manager] Removing stale session ${sessionId} (idle for ${Math.round((now - session.updatedAt) / 1000)}s)`)
+        this.clearTimer(this.cleanupTimers, sessionId)
+        this.clearTimer(this.taskCompletedTimers, sessionId)
+        this.rejectPendingPermissionsForSession(sessionId)
+        this.sessions.delete(sessionId)
+        changed = true
+      }
+    }
+
+    if (changed) {
+      this.onChange?.(this.getUpdate())
+    }
+  }
+
   destroy(): void {
+    if (this.staleCheckTimer) {
+      clearInterval(this.staleCheckTimer)
+      this.staleCheckTimer = null
+    }
     for (const timer of this.cleanupTimers.values()) clearTimeout(timer)
     for (const timer of this.taskCompletedTimers.values()) clearTimeout(timer)
     for (const pending of this.pendingPermissions.values()) {
