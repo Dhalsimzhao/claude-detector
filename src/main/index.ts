@@ -56,6 +56,7 @@ let currentDialogStyle: DialogStyle = initialConfig.dialogStyle
 let currentAutoApprove: boolean = initialConfig.autoApprove
 
 const sessionManager = new SessionManager()
+sessionManager.startOrphanCheck()
 
 // Handle timer-based state changes
 sessionManager.setOnChange((update) => {

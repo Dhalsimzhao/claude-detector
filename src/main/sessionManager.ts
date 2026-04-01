@@ -11,26 +11,50 @@ interface PendingPermission {
 }
 
 const PERMISSION_TIMEOUT_MS = 115000
-// Sessions with no events for this long are considered stale and removed
-const STALE_SESSION_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
-const STALE_CHECK_INTERVAL_MS = 60 * 1000 // check every minute
+const ORPHAN_CHECK_INTERVAL_MS = 15_000
+const ORPHAN_TIMEOUT_ACTIVE_MS = 60_000
+const ORPHAN_TIMEOUT_IDLE_MS = 3 * 60 * 1000
 
 export class SessionManager {
   private sessions = new Map<string, SessionState>()
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private taskCompletedTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private pendingPermissions = new Map<string, PendingPermission>()
-  private staleCheckTimer: ReturnType<typeof setInterval> | null = null
+  private orphanCheckTimer: ReturnType<typeof setInterval> | null = null
   private onChange: OnChangeCallback | null = null
   private onPermissionRequestNotify: OnPermissionRequestCallback | null = null
 
   setOnChange(callback: OnChangeCallback): void {
     this.onChange = callback
-    this.startStaleCleanup()
   }
 
   setOnPermissionRequest(callback: OnPermissionRequestCallback): void {
     this.onPermissionRequestNotify = callback
+  }
+
+  startOrphanCheck(): void {
+    if (this.orphanCheckTimer) return
+    this.orphanCheckTimer = setInterval(() => {
+      const now = Date.now()
+      let changed = false
+      for (const [id] of this.sessions) {
+        const session = this.sessions.get(id)!
+        const timeout = session.petState === 'idle' || session.petState === 'taskCompleted'
+          ? ORPHAN_TIMEOUT_IDLE_MS
+          : ORPHAN_TIMEOUT_ACTIVE_MS
+        if (now - session.updatedAt > timeout) {
+          console.log(`[session-manager] Removing stale session ${id} (idle for ${Math.round((now - session.updatedAt) / 1000)}s)`)
+          this.sessions.delete(id)
+          this.clearTimer(this.cleanupTimers, id)
+          this.clearTimer(this.taskCompletedTimers, id)
+          this.rejectPendingPermissionsForSession(id)
+          changed = true
+        }
+      }
+      if (changed) {
+        this.onChange?.(this.getUpdate())
+      }
+    }, ORPHAN_CHECK_INTERVAL_MS)
   }
 
   handleEvent(event: HookEventPayload): SessionUpdate {
@@ -105,6 +129,7 @@ export class SessionManager {
         this.cleanupTimers.set(session_id, setTimeout(() => {
           this.sessions.delete(session_id)
           this.cleanupTimers.delete(session_id)
+          this.onChange?.(this.getUpdate())
         }, 5000))
         break
     }
@@ -157,35 +182,10 @@ export class SessionManager {
     }
   }
 
-  private startStaleCleanup(): void {
-    if (this.staleCheckTimer) return
-    this.staleCheckTimer = setInterval(() => this.cleanupStaleSessions(), STALE_CHECK_INTERVAL_MS)
-  }
-
-  private cleanupStaleSessions(): void {
-    const now = Date.now()
-    let changed = false
-
-    for (const [sessionId, session] of this.sessions) {
-      if (now - session.updatedAt > STALE_SESSION_TIMEOUT_MS) {
-        console.log(`[session-manager] Removing stale session ${sessionId} (idle for ${Math.round((now - session.updatedAt) / 1000)}s)`)
-        this.clearTimer(this.cleanupTimers, sessionId)
-        this.clearTimer(this.taskCompletedTimers, sessionId)
-        this.rejectPendingPermissionsForSession(sessionId)
-        this.sessions.delete(sessionId)
-        changed = true
-      }
-    }
-
-    if (changed) {
-      this.onChange?.(this.getUpdate())
-    }
-  }
-
   destroy(): void {
-    if (this.staleCheckTimer) {
-      clearInterval(this.staleCheckTimer)
-      this.staleCheckTimer = null
+    if (this.orphanCheckTimer) {
+      clearInterval(this.orphanCheckTimer)
+      this.orphanCheckTimer = null
     }
     for (const timer of this.cleanupTimers.values()) clearTimeout(timer)
     for (const timer of this.taskCompletedTimers.values()) clearTimeout(timer)
