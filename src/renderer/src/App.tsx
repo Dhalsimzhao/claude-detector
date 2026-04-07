@@ -24,6 +24,7 @@ function App() {
   const [dialogStyle, setDialogStyle] = useState<DialogStyle>('panel')
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequestInfo | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [confettiEnabled, setConfettiEnabled] = useState(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
   const spriteTheme = toSpriteTheme(theme)
@@ -38,6 +39,10 @@ function App() {
 
   useEffect(() => {
     return window.api.onDialogStyleChange(setDialogStyle)
+  }, [])
+
+  useEffect(() => {
+    return window.api.onConfettiChange(setConfettiEnabled)
   }, [])
 
   useEffect(() => {
@@ -77,14 +82,16 @@ function App() {
       setToast({ text: 'Done!', project: '', color: { bg: '#f3e8ff', border: '#8b5cb8' } })
       toastTimer.current = setTimeout(() => setToast(null), 3000)
 
-      confetti({
-        particleCount: 60,
-        spread: 80,
-        origin: { x: 0.5, y: 0.6 },
-        gravity: 0.8,
-        ticks: 120,
-        colors: ['#8b5cb8', '#f3e8ff', '#ffd700', '#ff6b6b', '#4a9eff', '#00cc66']
-      })
+      if (confettiEnabled) {
+        confetti({
+          particleCount: 60,
+          spread: 80,
+          origin: { x: 0.5, y: 0.6 },
+          gravity: 0.8,
+          ticks: 120,
+          colors: ['#8b5cb8', '#f3e8ff', '#ffd700', '#ff6b6b', '#4a9eff', '#00cc66']
+        })
+      }
     }
   }, [spriteState])
 

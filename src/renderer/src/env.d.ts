@@ -12,6 +12,7 @@ declare global {
       onDialogStyleChange: (callback: (style: DialogStyle) => void) => () => void
       onDragChange: (callback: (dragging: boolean) => void) => () => void
       onPermissionRequest: (callback: (info: PermissionRequestInfo) => void) => () => void
+      onConfettiChange: (callback: (enabled: boolean) => void) => () => void
       onAutoApproveToast: (callback: (toolName: string, toolInput: Record<string, unknown>) => void) => () => void
       respondPermission: (requestId: string, decision: PermissionDecision) => void
       setClickThrough: (ignore: boolean) => void

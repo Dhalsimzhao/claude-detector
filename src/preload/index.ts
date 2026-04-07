@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   onDialogStyleChange: (cb: (style: DialogStyle) => void) => onIpc('dialog-style-change', cb),
   onDragChange: (cb: (dragging: boolean) => void) => onIpc('drag-change', cb),
   onPermissionRequest: (cb: (info: PermissionRequestInfo) => void) => onIpc('permission-request', cb),
+  onConfettiChange: (cb: (enabled: boolean) => void) => onIpc('confetti-change', cb),
   onAutoApproveToast: (cb: (toolName: string, toolInput: Record<string, unknown>, sessionId: string, cwd: string) => void) =>
     onIpc('auto-approve-toast', cb),
   respondPermission: (requestId: string, decision: PermissionDecision): void => {

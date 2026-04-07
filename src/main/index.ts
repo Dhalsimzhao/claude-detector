@@ -28,6 +28,7 @@ interface AppConfig {
   theme: PetTheme
   dialogStyle: DialogStyle
   autoApprove: boolean
+  confetti: boolean
 }
 
 function readConfig(): AppConfig {
@@ -37,9 +38,10 @@ function readConfig(): AppConfig {
     if (!VALID_THEMES.includes(config.theme)) config.theme = 'psyduck'
     if (!VALID_DIALOG_STYLES.includes(config.dialogStyle)) config.dialogStyle = 'panel'
     if (typeof config.autoApprove !== 'boolean') config.autoApprove = false
+    if (typeof config.confetti !== 'boolean') config.confetti = false
     return config
   } catch {
-    return { theme: 'psyduck', dialogStyle: 'panel', autoApprove: false }
+    return { theme: 'psyduck', dialogStyle: 'panel', autoApprove: false, confetti: false }
   }
 }
 
@@ -54,6 +56,7 @@ const initialConfig = readConfig()
 let currentTheme: PetTheme = initialConfig.theme
 let currentDialogStyle: DialogStyle = initialConfig.dialogStyle
 let currentAutoApprove: boolean = initialConfig.autoApprove
+let currentConfetti: boolean = initialConfig.confetti
 
 const sessionManager = new SessionManager()
 sessionManager.startOrphanCheck()
@@ -241,6 +244,16 @@ function buildContextMenu(): Menu {
       }
     },
     {
+      label: 'Confetti on Done',
+      type: 'checkbox',
+      checked: currentConfetti,
+      click: (menuItem) => {
+        currentConfetti = menuItem.checked
+        writeConfig({ confetti: menuItem.checked })
+        petWindow?.webContents.send('confetti-change', menuItem.checked)
+      }
+    },
+    {
       label: 'Show Sessions',
       click: () => {
         const sessions = sessionManager.getUpdate().sessions
@@ -267,6 +280,7 @@ app.whenReady().then(async () => {
   petWindow.webContents.on('did-finish-load', () => {
     petWindow?.webContents.send('theme-change', currentTheme)
     petWindow?.webContents.send('dialog-style-change', currentDialogStyle)
+    petWindow?.webContents.send('confetti-change', currentConfetti)
   })
 
   startCursorPolling()
