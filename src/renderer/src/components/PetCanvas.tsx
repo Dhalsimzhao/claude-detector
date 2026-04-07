@@ -56,7 +56,7 @@ export function PetCanvas({ state, frameIndex }: PetCanvasProps) {
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 12px monospace'
     ctx.textAlign = 'center'
-    ctx.fillText(state, SIZE / 2, y + h * 0.75)
+    ctx.fillText(state === 'taskCompleted' ? 'Done!' : state, SIZE / 2, y + h * 0.75)
   }, [state, frameIndex])
 
   return (

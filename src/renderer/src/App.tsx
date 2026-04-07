@@ -11,6 +11,7 @@ import { usePetDrag } from './hooks/usePetDrag'
 import { PetTheme, DialogStyle, SessionState, PermissionRequestInfo } from '../../shared/types'
 import { THEME_SPRITES, SpriteTheme } from './spriteConfig'
 import { getSessionColor } from './utils'
+import confetti from 'canvas-confetti'
 
 function toSpriteTheme(theme: PetTheme): SpriteTheme {
   if (theme !== 'blocks' && theme in THEME_SPRITES) return theme
@@ -69,6 +70,23 @@ function App() {
       toastTimer.current = setTimeout(() => setToast(null), 2500)
     })
   }, [])
+
+  useEffect(() => {
+    if (spriteState === 'taskCompleted') {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      setToast({ text: 'Done!', project: '', color: { bg: '#f3e8ff', border: '#8b5cb8' } })
+      toastTimer.current = setTimeout(() => setToast(null), 3000)
+
+      confetti({
+        particleCount: 60,
+        spread: 80,
+        origin: { x: 0.5, y: 0.6 },
+        gravity: 0.8,
+        ticks: 120,
+        colors: ['#8b5cb8', '#f3e8ff', '#ffd700', '#ff6b6b', '#4a9eff', '#00cc66']
+      })
+    }
+  }, [spriteState])
 
   function handlePermissionDecide(decision: 'approve' | 'deny') {
     if (!permissionRequest) return
